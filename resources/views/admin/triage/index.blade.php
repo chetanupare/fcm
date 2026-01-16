@@ -882,3 +882,5 @@
             }
         });
     });
+</script>
+@endpush
