@@ -4,7 +4,23 @@
 @section('page-title', 'Triage Queue')
 
 @section('content')
-<div class="space-y-6" x-data="{ assignModalOpen: false, selectedTicket: null }">
+<div class="space-y-6" x-data="{ 
+    assignModalOpen: false, 
+    selectedTicket: null,
+    submitAssignForm: function(event) {
+        console.log('=== Alpine submitAssignForm called ===');
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (typeof window.handleAssignSubmit === 'function') {
+            window.handleAssignSubmit(event);
+        } else {
+            console.error('handleAssignSubmit not available');
+            alert('Form handler not loaded. Please refresh.');
+        }
+    }
+}">
     <!-- Header with Stats -->
     <div class="flex items-center justify-between">
         <div>
@@ -154,7 +170,7 @@
                     Cancel
                 </button>
                 <button type="button" id="assign-submit-btn"
-                        @click="console.log('=== Alpine @click fired ==='); if(typeof window.handleAssignSubmit === 'function') { $event.preventDefault(); $event.stopPropagation(); window.handleAssignSubmit($event); } else { console.error('handleAssignSubmit not available'); alert('Form handler not loaded. Please refresh.'); }"
+                        @click="submitAssignForm($event)"
                         onclick="console.log('=== onclick fallback fired ==='); if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); } window.handleAssignSubmit(e); } return false;"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
