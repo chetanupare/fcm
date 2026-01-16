@@ -4,80 +4,7 @@
 @section('page-title', 'Triage Queue')
 
 @section('content')
-<div class="space-y-6" x-data="{
-    assignModalOpen: false, 
-    selectedTicket: null,
-    submitAssignForm: function(event, ticketId) {
-        console.log('Form submit triggered', ticketId);
-        event.preventDefault();
-        
-        const form = event.target;
-        const formData = new FormData(form);
-        const technicianId = form.querySelector('select[name=\"technician_id\"]').value;
-        
-        if (!ticketId) {
-            alert('Error: Ticket ID not found');
-            console.error('Ticket ID is null');
-            return;
-        }
-        
-        if (!technicianId) {
-            alert('Please select a technician');
-            return;
-        }
-        
-        const submitBtn = form.querySelector('#assign-submit-btn');
-        const originalText = submitBtn.textContent;
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Assigning...';
-        
-        const csrfToken = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || 
-                         form.querySelector('input[name=\"_token\"]')?.value;
-        
-        console.log('Submitting:', { ticketId, technicianId, csrfToken: csrfToken ? 'found' : 'missing' });
-        
-        fetch(`/admin/triage/${ticketId}/assign`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                technician_id: parseInt(technicianId),
-                _token: csrfToken
-            })
-        })
-        .then(response => {
-            console.log('Response status:', response.status);
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                if (response.ok) {
-                    return response.json().catch(() => ({ message: 'Success' }));
-                }
-                return response.json().then(err => Promise.reject(err));
-            } else {
-                if (response.ok || response.redirected) {
-                    return { message: 'Success', redirect: true };
-                }
-                throw new Error('Request failed');
-            }
-        })
-        .then(data => {
-            console.log('Success:', data);
-            alert(data.message || 'Ticket assigned successfully!');
-            location.reload();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            const errorMsg = error.message || error.error || 'Failed to assign ticket. Please try again.';
-            alert(errorMsg);
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        });
-    }
-}">
+<div class="space-y-6" x-data="{ assignModalOpen: false, selectedTicket: null }">
     <!-- Header with Stats -->
     <div class="flex items-center justify-between">
         <div>
@@ -203,7 +130,7 @@
                 </svg>
             </button>
         </div>
-        <form method="POST" id="assign-form" x-bind:action="`/admin/triage/${selectedTicket}/assign`" x-on:submit.prevent="submitAssignForm($event, selectedTicket)">
+        <form method="POST" id="assign-form" x-bind:action="`/admin/triage/${selectedTicket}/assign`">
             @csrf
             <input type="hidden" name="ticket_id" x-bind:value="selectedTicket" id="ticket-id-input">
             <div class="mb-6">
@@ -294,16 +221,93 @@
         location.reload();
     }, 60000); // Changed to 60 seconds since we have real-time countdown
 
-    // Debug: Check if Alpine.js is loaded
+    // Handle form submission with fetch for better UX
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM loaded');
-        console.log('Alpine.js available:', typeof Alpine !== 'undefined');
+        console.log('DOM loaded, setting up form handler');
         
-        // Test if modal opens
+        // Use event delegation for form submission
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.id === 'assign-form') {
+                console.log('Assign form submitted');
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                const ticketId = form.querySelector('#ticket-id-input')?.value || 
+                                form.querySelector('input[name="ticket_id"]')?.value;
+                const technicianId = form.querySelector('select[name="technician_id"]')?.value;
+                const csrfToken = form.querySelector('input[name="_token"]')?.value ||
+                                 document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
+                console.log('Form data:', { ticketId, technicianId, hasCsrf: !!csrfToken });
+                
+                if (!ticketId) {
+                    alert('Error: Ticket ID not found. Please refresh and try again.');
+                    console.error('Ticket ID missing');
+                    return;
+                }
+                
+                if (!technicianId) {
+                    alert('Please select a technician');
+                    return;
+                }
+                
+                const submitBtn = form.querySelector('#assign-submit-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Assigning...';
+                
+                fetch(`/admin/triage/${ticketId}/assign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        technician_id: parseInt(technicianId),
+                        _token: csrfToken
+                    })
+                })
+                .then(response => {
+                    console.log('Response received:', response.status, response.statusText);
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        if (response.ok) {
+                            return response.json().catch(() => ({ message: 'Success' }));
+                        }
+                        return response.json().then(err => {
+                            console.error('Error response:', err);
+                            return Promise.reject(err);
+                        });
+                    } else {
+                        if (response.ok || response.redirected) {
+                            return { message: 'Success', redirect: true };
+                        }
+                        throw new Error('Request failed with status: ' + response.status);
+                    }
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    alert(data.message || 'Ticket assigned successfully!');
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    const errorMsg = error.message || error.error || 'Failed to assign ticket. Please try again.';
+                    alert(errorMsg);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                });
+            }
+        });
+        
+        // Debug: Log button clicks
         document.addEventListener('click', function(e) {
-            const assignBtn = e.target.closest('button[data-ticket-id]');
-            if (assignBtn) {
-                console.log('Assign button clicked, ticket ID:', assignBtn.getAttribute('data-ticket-id'));
+            if (e.target.closest('button[data-ticket-id]')) {
+                const btn = e.target.closest('button[data-ticket-id]');
+                console.log('Assign button clicked, ticket ID:', btn.getAttribute('data-ticket-id'));
             }
         });
     });
