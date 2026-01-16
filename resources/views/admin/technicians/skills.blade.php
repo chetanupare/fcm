@@ -167,7 +167,7 @@
                                     class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                     onchange="updateAddButtonState()">
                                 <option value="">Select level...</option>
-                                <option value="basic">Basic</option>
+                                <option value="basic" selected>Basic</option>
                                 <option value="intermediate">Intermediate</option>
                                 <option value="advanced">Advanced</option>
                                 <option value="expert">Expert</option>
@@ -258,17 +258,20 @@
     function showAddSkillForm(technicianId) {
         const form = document.getElementById('add-skill-form');
         form.classList.remove('hidden');
-        // Reset form and enable button
-        const submitBtn = document.getElementById('add-skill-submit-btn');
-        if (submitBtn) {
-            submitBtn.disabled = false;
-        }
+        
         // Reset form fields
         const deviceSelect = document.getElementById('device-type-select');
         const complexitySelect = document.getElementById('complexity-level-select');
         if (deviceSelect) deviceSelect.value = '';
-        if (complexitySelect) complexitySelect.value = '';
-        updateAddButtonState();
+        if (complexitySelect) complexitySelect.value = 'basic'; // Set default
+        
+        // Load device types if not already loaded
+        loadDeviceTypes(technicianId).then(() => {
+            // Update button state after a brief delay to ensure DOM is ready
+            setTimeout(() => {
+                updateAddButtonState();
+            }, 100);
+        });
     }
     
     function hideAddSkillForm() {
