@@ -439,10 +439,14 @@
             const shouldEnable = deviceSelected && complexitySelected;
             submitBtn.disabled = !shouldEnable;
             
-            // Update visual state - remove disabled classes when enabled
+            // Always keep button green - only adjust opacity and cursor
+            // Remove any classes that might change the color
+            submitBtn.classList.remove('bg-slate-400', 'bg-gray-500', 'bg-red-500', 'bg-blue-500', 'bg-yellow-500');
+            submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            
+            // Update visual state - only opacity and cursor, not color
             if (shouldEnable) {
                 submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
             } else {
                 submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
