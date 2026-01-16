@@ -371,24 +371,53 @@
         // Also check immediately in case modal is already open
         setTimeout(function() {
             const submitBtn = document.getElementById('assign-submit-btn');
-            if (submitBtn && !submitBtn.hasAttribute('data-handler-attached')) {
-                submitBtn.setAttribute('data-handler-attached', 'true');
-                submitBtn.addEventListener('click', function(e) {
-                    console.log('Submit button clicked via event listener (immediate)');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (typeof window.handleAssignSubmit === 'function') {
-                        window.handleAssignSubmit(e);
-                    } else {
-                        console.error('handleAssignSubmit function not found');
-                        alert('Error: Form handler not loaded. Please refresh the page.');
-                    }
+            if (submitBtn) {
+                if (!submitBtn.hasAttribute('data-handler-attached')) {
+                    submitBtn.setAttribute('data-handler-attached', 'true');
+                    submitBtn.addEventListener('click', function(e) {
+                        console.log('Submit button clicked via event listener (immediate)');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (typeof window.handleAssignSubmit === 'function') {
+                            window.handleAssignSubmit(e);
+                        } else {
+                            console.error('handleAssignSubmit function not found');
+                            alert('Error: Form handler not loaded. Please refresh the page.');
+                        }
+                    }, true); // Use capture phase
+                    console.log('Submit button handler attached (immediate)');
+                }
+                // Test if button is clickable
+                console.log('Submit button found:', {
+                    id: submitBtn.id,
+                    type: submitBtn.type,
+                    disabled: submitBtn.disabled,
+                    visible: submitBtn.offsetParent !== null
                 });
-                console.log('Submit button handler attached (immediate)');
+            } else {
+                console.log('Submit button not found in DOM');
             }
         }, 1000);
         
-        // Use event delegation for form submission
+        // Use event delegation for button clicks (more reliable)
+        document.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target && target.id === 'assign-submit-btn') {
+                console.log('Assign submit button clicked via delegation');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (typeof window.handleAssignSubmit === 'function') {
+                    window.handleAssignSubmit(e);
+                } else {
+                    console.error('handleAssignSubmit not found');
+                    alert('Error: Form handler not loaded. Please refresh.');
+                }
+                return;
+            }
+        });
+        
+        // Use event delegation for form submission (backup)
         document.addEventListener('submit', function(e) {
             const form = e.target;
             if (form.id === 'assign-form') {
