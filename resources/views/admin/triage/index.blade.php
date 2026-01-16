@@ -250,14 +250,53 @@
             
             // Also ensure recommendations are loaded after modal is visible (fallback)
             setTimeout(() => {
-                const element = document.querySelector('[x-data]');
+                console.log('=== FALLBACK: Attempting to load recommendations after modal visible ===');
+                const element = document.querySelector('[x-data]') || 
+                               document.querySelector('.space-y-6[x-data]') ||
+                               document.querySelector('div[x-data]');
+                console.log('Fallback - Element found:', element ? 'Yes' : 'No');
+                console.log('Fallback - Element __x:', element && element.__x ? 'Yes' : 'No');
+                
                 if (element && element.__x) {
                     const alpineComponent = element.__x;
                     console.log('=== FALLBACK: Loading recommendations after modal visible ===');
                     if (typeof window.loadRecommendations === 'function') {
+                        console.log('Fallback: Calling window.loadRecommendations...');
                         window.loadRecommendations(ticketId, alpineComponent);
                     } else {
                         console.error('window.loadRecommendations still not available in fallback!');
+                    }
+                } else {
+                    console.error('Fallback: Alpine component still not found!');
+                    console.error('Attempting direct API call as last resort...');
+                    // Last resort: try to call the API directly
+                    if (ticketId) {
+                        const url = `/admin/triage/${ticketId}/recommendations`;
+                        console.log('Making direct fetch call to:', url);
+                        fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                            },
+                            credentials: 'same-origin'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Direct API call successful:', data);
+                            // Try to update Alpine if it becomes available
+                            setTimeout(() => {
+                                const el = document.querySelector('[x-data]');
+                                if (el && el.__x) {
+                                    el.__x.$data.recommendations = data.recommendations || [];
+                                    el.__x.$data.loadingRecommendations = false;
+                                }
+                            }, 100);
+                        })
+                        .catch(error => {
+                            console.error('Direct API call failed:', error);
+                        });
                     }
                 }
             }, 300);
