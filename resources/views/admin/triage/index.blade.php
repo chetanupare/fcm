@@ -20,9 +20,30 @@
                 alpineComponent.$data.selectedTechnician = null;
                 console.log('Modal state:', { assignModalOpen: alpineComponent.$data.assignModalOpen, selectedTicket: alpineComponent.$data.selectedTicket });
                 
-                // Load recommendations if function is available
-                if (ticketId && typeof loadRecommendations === 'function') {
-                    loadRecommendations(ticketId, alpineComponent);
+                // Load recommendations - ensure function is available
+                if (ticketId) {
+                    console.log('Attempting to load recommendations for ticket:', ticketId);
+                    console.log('loadRecommendations function available:', typeof loadRecommendations === 'function');
+                    console.log('window.loadRecommendations available:', typeof window.loadRecommendations === 'function');
+                    
+                    // Try both local and window-scoped function
+                    if (typeof loadRecommendations === 'function') {
+                        console.log('Calling loadRecommendations...');
+                        loadRecommendations(ticketId, alpineComponent);
+                    } else if (typeof window.loadRecommendations === 'function') {
+                        console.log('Calling window.loadRecommendations...');
+                        window.loadRecommendations(ticketId, alpineComponent);
+                    } else {
+                        console.error('loadRecommendations function not found!');
+                        // Fallback: call it directly after a delay
+                        setTimeout(() => {
+                            if (typeof loadRecommendations === 'function') {
+                                loadRecommendations(ticketId, alpineComponent);
+                            } else if (typeof window.loadRecommendations === 'function') {
+                                window.loadRecommendations(ticketId, alpineComponent);
+                            }
+                        }, 200);
+                    }
                 }
             } else {
                 // Retry if Alpine not ready yet
@@ -528,8 +549,8 @@
     // Track which ticket is currently loading recommendations to prevent duplicates
     let loadingRecommendationsForTicket = null;
     
-    // Function to load recommendations for a ticket
-    function loadRecommendations(ticketId, alpineComponent) {
+    // Function to load recommendations for a ticket - Make it globally available
+    window.loadRecommendations = function loadRecommendations(ticketId, alpineComponent) {
         if (!ticketId) {
             console.warn('No ticket ID provided to loadRecommendations');
             return;
