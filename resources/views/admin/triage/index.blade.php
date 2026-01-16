@@ -533,8 +533,16 @@
                 if (typeof Alpine !== 'undefined' && element.__x) {
                     alpineComponent = element.__x;
                 } else {
-                    // Alpine not ready yet, skip for now
-                    console.warn('Alpine component not ready yet, skipping recommendations load');
+                    // Alpine not ready yet, retry after a short delay
+                    console.warn('Alpine component not ready yet, will retry in 300ms');
+                    setTimeout(() => {
+                        const retryElement = document.querySelector('[x-data]');
+                        if (retryElement && retryElement.__x) {
+                            loadRecommendations(ticketId, retryElement.__x);
+                        } else {
+                            console.error('Alpine component still not ready after retry');
+                        }
+                    }, 300);
                     return;
                 }
             } else {
@@ -549,8 +557,11 @@
         }
         
         console.log('Loading recommendations for ticket:', ticketId);
+        // Initialize recommendations array if it doesn't exist
+        if (!alpineComponent.$data.recommendations) {
+            alpineComponent.$data.recommendations = [];
+        }
         alpineComponent.$data.loadingRecommendations = true;
-        alpineComponent.$data.recommendations = [];
         
         fetch(`/admin/triage/${ticketId}/recommendations`, {
             headers: {
