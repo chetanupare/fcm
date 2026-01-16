@@ -44,10 +44,26 @@ class JobController extends Controller
                     'ticket_id' => $job->ticket_id,
                     'device' => $job->ticket->device->brand . ' ' . $job->ticket->device->device_type,
                     'issue' => $job->ticket->issue_description,
+                    'address' => $job->ticket->address,
+                    'latitude' => $job->ticket->latitude,
+                    'longitude' => $job->ticket->longitude,
+                    'preferred_date' => $job->ticket->preferred_date,
+                    'preferred_time' => $job->ticket->preferred_time,
+                    'priority' => $job->ticket->priority,
                     'deadline' => $job->offer_deadline_at,
                     'countdown' => $job->offer_deadline_at 
                         ? max(0, $job->offer_deadline_at->diffInSeconds(now()))
                         : 0,
+                    'ticket' => [
+                        'device' => [
+                            'brand' => $job->ticket->device->brand,
+                            'device_type' => $job->ticket->device->device_type,
+                        ],
+                        'address' => $job->ticket->address,
+                        'preferred_date' => $job->ticket->preferred_date,
+                        'preferred_time' => $job->ticket->preferred_time,
+                        'issue_description' => $job->ticket->issue_description,
+                    ],
                 ];
             });
 
