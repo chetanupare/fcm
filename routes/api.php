@@ -26,6 +26,8 @@ use App\Http\Controllers\Api\Admin\TechnicianPerformanceController;
 use App\Http\Controllers\Api\Admin\IntegrationController;
 use App\Http\Controllers\Api\Admin\BrandingController;
 use App\Http\Controllers\Api\Admin\InventoryController as AdminInventoryController;
+use App\Http\Controllers\Api\Admin\DeviceImageController;
+use App\Http\Controllers\Api\Customer\ServiceHistoryController;
 use App\Http\Controllers\Api\Technician\JobController as TechnicianJobController;
 use App\Http\Controllers\Api\Technician\StatusController;
 use App\Http\Controllers\Api\Technician\InventoryController;
@@ -70,6 +72,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/jobs/{jobId}/ratings', [\App\Http\Controllers\Api\Customer\RatingController::class, 'store']);
         Route::get('/jobs/{jobId}/ratings', [\App\Http\Controllers\Api\Customer\RatingController::class, 'show']);
         Route::put('/jobs/{jobId}/ratings', [\App\Http\Controllers\Api\Customer\RatingController::class, 'update']);
+        
+        // Service History
+        Route::get('/service-history', [ServiceHistoryController::class, 'index']);
+        Route::get('/service-history/{ticketId}', [ServiceHistoryController::class, 'show']);
     });
 
     // Technician routes
@@ -243,5 +249,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/inventory/{id}/adjust', [AdminInventoryController::class, 'adjustStock']);
         Route::get('/inventory/reorder-alerts', [AdminInventoryController::class, 'getReorderAlerts']);
         Route::post('/inventory/scan', [AdminInventoryController::class, 'scanBarcode']);
+        
+        // Device Images
+        Route::post('/tickets/{ticketId}/device-images', [DeviceImageController::class, 'upload']);
+        Route::delete('/tickets/{ticketId}/device-images', [DeviceImageController::class, 'delete']);
     });
 });
