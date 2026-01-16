@@ -316,13 +316,17 @@
         </div>
         
         <!-- Loading State -->
-        <div x-show="loadingRecommendations" class="mb-6 text-center py-4">
+        <div x-show="loadingRecommendations" 
+             x-transition
+             class="mb-6 text-center py-4">
             <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
             <p class="text-sm text-slate-500 mt-2">Loading recommendations...</p>
         </div>
         
         <!-- No Recommendations Message -->
-        <div x-show="!loadingRecommendations && (!recommendations || recommendations.length === 0)" class="mb-6 text-center py-4 border border-slate-200 rounded-lg bg-slate-50">
+        <div x-show="!loadingRecommendations && recommendations && recommendations.length === 0" 
+             x-transition
+             class="mb-6 text-center py-4 border border-slate-200 rounded-lg bg-slate-50">
             <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
@@ -733,7 +737,7 @@
                         }
                         
                         // Only update if ticket ID changed
-                        if (ticketId && ticketId !== lastUpdatedTicketId) {
+                        if (ticketId && ticketId !== window.lastUpdatedTicketId) {
                             updateAssignForm(ticketId);
                         }
                     
