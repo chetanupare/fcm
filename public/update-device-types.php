@@ -25,6 +25,25 @@ try {
         return strtolower($type->name);
     });
     
+    // Common device type mappings (handle variations)
+    $deviceTypeMappings = [
+        'phone' => 'phone',
+        'mobile' => 'phone',
+        'smartphone' => 'phone',
+        'laptop' => 'laptop',
+        'notebook' => 'laptop',
+        'desktop' => 'desktop',
+        'pc' => 'desktop',
+        'tablet' => 'tablet',
+        'ipad' => 'tablet',
+        'ac' => 'ac',
+        'air conditioner' => 'ac',
+        'fridge' => 'fridge',
+        'refrigerator' => 'fridge',
+        'printer' => 'printer',
+        'scanner' => 'scanner',
+    ];
+    
     echo "<h2>Available Device Types</h2>";
     echo "<ul>";
     foreach ($deviceTypes as $name => $type) {
@@ -32,6 +51,50 @@ try {
     }
     echo "</ul>";
     echo "<hr>";
+    
+    // Check for missing device types and create them
+    echo "<h2>Checking for Missing Device Types</h2>";
+    $missingTypes = [];
+    $devicesToCheck = \App\Models\Device::whereNull('device_type_id')
+        ->whereNotNull('device_type')
+        ->distinct()
+        ->pluck('device_type')
+        ->map(function($type) {
+            return strtolower(trim($type));
+        })
+        ->unique();
+    
+    foreach ($devicesToCheck as $deviceTypeString) {
+        $normalizedType = $deviceTypeMappings[$deviceTypeString] ?? $deviceTypeString;
+        
+        if (!$deviceTypes->has($normalizedType)) {
+            $missingTypes[] = $normalizedType;
+        }
+    }
+    
+    if (!empty($missingTypes)) {
+        echo "<p style='color: orange;'><strong>Missing device types found:</strong> " . implode(', ', array_unique($missingTypes)) . "</p>";
+        echo "<p>Creating missing device types...</p>";
+        
+        foreach (array_unique($missingTypes) as $typeName) {
+            $deviceType = \App\Models\DeviceType::firstOrCreate(
+                ['name' => ucfirst($typeName)],
+                [
+                    'slug' => \Illuminate\Support\Str::slug($typeName),
+                    'is_active' => true,
+                    'sort_order' => 0,
+                ]
+            );
+            
+            $deviceTypes->put(strtolower($typeName), $deviceType);
+            echo "<p style='color: green;'>✓ Created device type: <strong>{$deviceType->name}</strong> (ID: {$deviceType->id})</p>";
+        }
+        
+        echo "<hr>";
+    } else {
+        echo "<p style='color: green;'>✓ All required device types exist!</p>";
+        echo "<hr>";
+    }
     
     // Find devices missing device_type_id
     $devicesToUpdate = \App\Models\Device::whereNull('device_type_id')
@@ -51,17 +114,24 @@ try {
         $failed = 0;
         
         foreach ($devicesToUpdate as $device) {
-            $deviceTypeString = strtolower($device->device_type ?? '');
+            $deviceTypeString = strtolower(trim($device->device_type ?? ''));
+            // Try direct match first
             $deviceType = $deviceTypes->get($deviceTypeString);
+            
+            // If no direct match, try mapping
+            if (!$deviceType) {
+                $normalizedType = $deviceTypeMappings[$deviceTypeString] ?? $deviceTypeString;
+                $deviceType = $deviceTypes->get($normalizedType);
+            }
             
             if ($deviceType) {
                 $device->device_type_id = $deviceType->id;
                 $device->save();
                 $updated++;
-                $status = "<span style='color: green;'>✓ Updated (ID: {$deviceType->id})</span>";
+                $status = "<span style='color: green;'>✓ Updated (ID: {$deviceType->id}, Type: {$deviceType->name})</span>";
             } else {
                 $failed++;
-                $status = "<span style='color: red;'>✗ No match found</span>";
+                $status = "<span style='color: red;'>✗ No match found for '{$device->device_type}'</span>";
             }
             
             echo "<tr>";
