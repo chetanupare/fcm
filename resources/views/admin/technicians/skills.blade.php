@@ -154,16 +154,19 @@
                 <form id="add-skill-form-element" onsubmit="addSkill(event, ${technicianId})">
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Device Type</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Device Type <span class="text-red-500">*</span></label>
                             <select name="device_type_id" id="device-type-select" required 
-                                    class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                                    class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    onchange="updateAddButtonState()">
                                 <option value="">Select device type...</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Complexity Level</label>
-                            <select name="complexity_level" required 
-                                    class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Complexity Level <span class="text-red-500">*</span></label>
+                            <select name="complexity_level" id="complexity-level-select" required 
+                                    class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    onchange="updateAddButtonState()">
+                                <option value="">Select level...</option>
                                 <option value="basic">Basic</option>
                                 <option value="intermediate">Intermediate</option>
                                 <option value="advanced">Advanced</option>
@@ -253,11 +256,42 @@
     }
     
     function showAddSkillForm(technicianId) {
-        document.getElementById('add-skill-form').classList.remove('hidden');
+        const form = document.getElementById('add-skill-form');
+        form.classList.remove('hidden');
+        // Reset form and enable button
+        const submitBtn = document.getElementById('add-skill-submit-btn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+        }
+        // Reset form fields
+        const deviceSelect = document.getElementById('device-type-select');
+        const complexitySelect = document.getElementById('complexity-level-select');
+        if (deviceSelect) deviceSelect.value = '';
+        if (complexitySelect) complexitySelect.value = '';
+        updateAddButtonState();
     }
     
     function hideAddSkillForm() {
         document.getElementById('add-skill-form').classList.add('hidden');
+        // Reset form
+        const form = document.getElementById('add-skill-form-element');
+        if (form) {
+            form.reset();
+        }
+    }
+    
+    function updateAddButtonState() {
+        const submitBtn = document.getElementById('add-skill-submit-btn');
+        const deviceSelect = document.getElementById('device-type-select');
+        const complexitySelect = document.getElementById('complexity-level-select');
+        
+        if (submitBtn && deviceSelect && complexitySelect) {
+            const deviceSelected = deviceSelect.value && deviceSelect.value !== '';
+            const complexitySelected = complexitySelect.value && complexitySelect.value !== '';
+            
+            // Enable button only if both fields are selected
+            submitBtn.disabled = !(deviceSelected && complexitySelected);
+        }
     }
     
     function addSkill(event, technicianId) {
