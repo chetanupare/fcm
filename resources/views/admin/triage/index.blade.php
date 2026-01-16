@@ -154,7 +154,8 @@
                     Cancel
                 </button>
                 <button type="button" id="assign-submit-btn"
-                        onclick="console.log('=== onclick fired ==='); console.log('handleAssignSubmit available:', typeof window.handleAssignSubmit); if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); } window.handleAssignSubmit(e); } else { console.error('handleAssignSubmit not available'); alert('Form handler not loaded. Please refresh.'); } return false;"
+                        @click="console.log('=== Alpine @click fired ==='); if(typeof window.handleAssignSubmit === 'function') { $event.preventDefault(); $event.stopPropagation(); window.handleAssignSubmit($event); } else { console.error('handleAssignSubmit not available'); alert('Form handler not loaded. Please refresh.'); }"
+                        onclick="console.log('=== onclick fallback fired ==='); if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); } window.handleAssignSubmit(e); } return false;"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
                 </button>
