@@ -403,28 +403,36 @@
             }
         }, 1000);
         
-        // Use event delegation for button clicks (more reliable)
+        // Use event delegation for button clicks (more reliable) - capture phase
         document.addEventListener('click', function(e) {
             const target = e.target;
-            const submitBtn = target.closest('#assign-submit-btn') || (target.id === 'assign-submit-btn' ? target : null);
+            // Check if clicked element is the button or inside it
+            const submitBtn = target.closest('#assign-submit-btn') || 
+                             (target.id === 'assign-submit-btn' ? target : null) ||
+                             (target.closest('button')?.id === 'assign-submit-btn' ? target.closest('button') : null);
             
-            if (submitBtn) {
-                console.log('Assign submit button clicked via delegation', {
+            if (submitBtn && submitBtn.id === 'assign-submit-btn') {
+                console.log('=== Assign submit button clicked via delegation (CAPTURE) ===', {
                     target: target.tagName,
+                    targetId: target.id,
                     buttonId: submitBtn.id,
                     buttonType: submitBtn.type,
-                    buttonDisabled: submitBtn.disabled
+                    buttonDisabled: submitBtn.disabled,
+                    buttonVisible: submitBtn.offsetParent !== null
                 });
-                e.preventDefault();
-                e.stopPropagation();
                 
-                if (typeof window.handleAssignSubmit === 'function') {
-                    window.handleAssignSubmit(e);
-                } else {
-                    console.error('handleAssignSubmit not found');
-                    alert('Error: Form handler not loaded. Please refresh.');
-                }
-                return false;
+                // Don't prevent default here - let Alpine handle it first, then our handler
+                // Only prevent if Alpine didn't handle it
+                setTimeout(() => {
+                    if (!e.defaultPrevented) {
+                        console.log('Event not prevented by Alpine, handling manually');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (typeof window.handleAssignSubmit === 'function') {
+                            window.handleAssignSubmit(e);
+                        }
+                    }
+                }, 0);
             }
         }, true); // Use capture phase to catch early
         
