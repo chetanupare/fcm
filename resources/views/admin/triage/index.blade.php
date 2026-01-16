@@ -7,6 +7,19 @@
 <div class="space-y-6" x-data="{ 
     assignModalOpen: false, 
     selectedTicket: null,
+    openAssignModal: function(ticketId) {
+        console.log('=== openAssignModal called for ticket:', ticketId);
+        this.selectedTicket = ticketId;
+        this.assignModalOpen = true;
+        window.currentTicketId = ticketId;
+        console.log('Modal state:', { assignModalOpen: this.assignModalOpen, selectedTicket: this.selectedTicket });
+        // Update form after a brief delay to ensure modal is visible
+        setTimeout(() => {
+            if (typeof updateAssignForm === 'function') {
+                updateAssignForm(ticketId);
+            }
+        }, 100);
+    },
     submitAssignForm: function(event) {
         console.log('=== Alpine submitAssignForm called ===', event);
         if (event) {
@@ -111,7 +124,7 @@
                         <!-- Actions -->
                         <div class="col-span-2 flex items-center justify-end gap-2">
                             <button type="button"
-                                    @click.stop="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}; console.log('Modal opening for ticket {{ $ticket['id'] }}'); window.currentTicketId = {{ $ticket['id'] }}; if (typeof updateAssignForm === 'function') { updateAssignForm({{ $ticket['id'] }}); }"
+                                    @click.stop="openAssignModal({{ $ticket['id'] }})"
                                     data-ticket-id="{{ $ticket['id'] }}"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm hover:shadow-md">
                                 Assign
