@@ -22,10 +22,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Set application timezone from settings
-        $timezone = Setting::get('timezone', config('app.timezone', 'UTC'));
-        config(['app.timezone' => $timezone]);
-        date_default_timezone_set($timezone);
+        // Set application timezone from settings (only if database is available)
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                $timezone = Setting::get('timezone', config('app.timezone', 'UTC'));
+                config(['app.timezone' => $timezone]);
+                date_default_timezone_set($timezone);
+            }
+        } catch (\Exception $e) {
+            // Database not available yet (e.g., during migrations)
+            // Use default timezone
+            $timezone = config('app.timezone', 'UTC');
+            date_default_timezone_set($timezone);
+        }
 
         // Register Blade directives for currency formatting
         Blade::directive('currency', function ($expression) {
