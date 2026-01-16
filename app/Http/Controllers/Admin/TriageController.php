@@ -224,15 +224,30 @@ class TriageController extends Controller
                 })->toArray(),
             ]);
 
-            return response()->json([
+            $response = [
                 'recommendations' => $recommendations,
                 'count' => $recommendations->count(),
                 'debug' => [
-                    'ticket_device_type_id' => $ticket->device->device_type_id ?? null,
-                    'ticket_device_type_name' => $ticket->device->deviceType->name ?? null,
+                    'ticket_id' => $ticketId,
+                    'ticket_status' => $ticket->status,
+                    'device_id' => $ticket->device_id,
+                    'device_type_id' => $ticket->device->device_type_id ?? null,
+                    'device_type_name' => $ticket->device->deviceType->name ?? null,
+                    'device_type_string' => $ticket->device->device_type ?? null,
                     'technicians_checked' => $technicians->count(),
+                    'technicians_with_skills' => $technicians->filter(function($tech) use ($ticket) {
+                        if (!$ticket->device || !$ticket->device->device_type_id) {
+                            return false;
+                        }
+                        return $tech->getSkillForDeviceType($ticket->device->device_type_id) !== null;
+                    })->count(),
                 ],
-            ]);
+            ];
+            
+            // Log the response for debugging
+            \Log::info('Recommendations API Response', $response);
+            
+            return response()->json($response);
         } catch (\Exception $e) {
             \Log::error('Error getting recommended technicians', [
                 'ticket_id' => $ticketId,

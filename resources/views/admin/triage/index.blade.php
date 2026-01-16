@@ -567,7 +567,10 @@
         alpineComponent.$data.loadingRecommendations = true;
         
         const url = `/admin/triage/${ticketId}/recommendations`;
-        console.log('Fetching recommendations from:', url);
+        console.log('=== FETCHING RECOMMENDATIONS ===');
+        console.log('URL:', url);
+        console.log('Ticket ID:', ticketId);
+        console.log('Alpine Component:', alpineComponent ? 'Found' : 'Missing');
         
         fetch(url, {
             method: 'GET',
@@ -579,24 +582,55 @@
             credentials: 'same-origin'
         })
         .then(response => {
-            console.log('Response status:', response.status);
+            console.log('=== RESPONSE RECEIVED ===');
+            console.log('Status:', response.status);
+            console.log('Status Text:', response.statusText);
+            console.log('OK:', response.ok);
+            
             if (!response.ok) {
                 return response.json().then(data => {
-                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    console.error('=== ERROR RESPONSE ===');
+                    console.error('Error Data:', data);
+                    throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
                 });
             }
             return response.json();
         })
         .then(data => {
-            console.log('Recommendations data received:', data);
+            console.log('=== RECOMMENDATIONS DATA ===');
+            console.log('Full Response:', JSON.stringify(data, null, 2));
+            console.log('Recommendations Count:', data.recommendations ? data.recommendations.length : 0);
+            console.log('Debug Info:', data.debug);
+            
             if (alpineComponent && alpineComponent.$data) {
+                console.log('Setting recommendations in Alpine...');
                 alpineComponent.$data.recommendations = data.recommendations || [];
                 alpineComponent.$data.loadingRecommendations = false;
+                console.log('Alpine recommendations set:', alpineComponent.$data.recommendations.length);
+            } else {
+                console.error('Alpine component or $data not available!');
             }
             loadingRecommendationsForTicket = null;
             
             if (data.recommendations && data.recommendations.length === 0) {
-                console.warn('No recommendations found for ticket:', ticketId);
+                console.warn('=== NO RECOMMENDATIONS FOUND ===');
+                console.warn('Ticket ID:', ticketId);
+                console.warn('Debug Info:', data.debug);
+                console.warn('Possible reasons:');
+                console.warn('1. No technicians with status="on_duty"');
+                console.warn('2. All technicians have active_jobs_count > 0');
+                console.warn('3. Device missing device_type_id');
+                console.warn('4. No technicians have matching skills');
+            } else if (data.recommendations && data.recommendations.length > 0) {
+                console.log('=== RECOMMENDATIONS FOUND ===');
+                data.recommendations.forEach((rec, index) => {
+                    console.log(`Recommendation ${index + 1}:`, {
+                        id: rec.id,
+                        name: rec.name,
+                        skill_score: rec.skill_match_score,
+                        combined_score: rec.combined_score
+                    });
+                });
             }
         })
         .catch(error => {
