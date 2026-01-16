@@ -4,6 +4,9 @@
 @section('page-title', 'Technician Skills Management')
 
 @section('content')
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
 <div class="space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
@@ -378,7 +381,7 @@
         const complexityLevel = formData.get('complexity_level');
         
         if (!deviceTypeId || !complexityLevel) {
-            alert('Please fill in all required fields');
+            showToast('Please fill in all required fields', 'warning');
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
@@ -438,7 +441,7 @@
         })
         .catch(error => {
             console.error('Error adding skill:', error);
-            alert(error.message || 'Error adding skill. Please try again.');
+            showToast(error.message || 'Error adding skill. Please try again.', 'error');
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
