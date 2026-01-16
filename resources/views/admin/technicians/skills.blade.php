@@ -109,6 +109,83 @@
 
 @push('scripts')
 <script>
+    // Modern Toast Notification System - Define first so it's available everywhere
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            console.warn('Toast container not found, falling back to alert');
+            alert(message);
+            return;
+        }
+        
+        const toast = document.createElement('div');
+        const id = 'toast-' + Date.now();
+        toast.id = id;
+        
+        const colors = {
+            success: {
+                bg: 'bg-green-500',
+                border: 'border-green-600',
+                icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+            },
+            error: {
+                bg: 'bg-red-500',
+                border: 'border-red-600',
+                icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+            },
+            warning: {
+                bg: 'bg-yellow-500',
+                border: 'border-yellow-600',
+                icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>'
+            },
+            info: {
+                bg: 'bg-blue-500',
+                border: 'border-blue-600',
+                icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+            }
+        };
+        
+        const style = colors[type] || colors.info;
+        
+        toast.className = `${style.bg} ${style.border} border-l-4 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] max-w-md transform transition-all duration-300 ease-in-out translate-x-full opacity-0`;
+        toast.innerHTML = `
+            <div class="flex-shrink-0">
+                ${style.icon}
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">${message}</p>
+            </div>
+            <button onclick="closeToast('${id}')" class="flex-shrink-0 ml-2 text-white hover:text-gray-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+        }, 10);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            closeToast(id);
+        }, 5000);
+    }
+    
+    function closeToast(id) {
+        const toast = document.getElementById(id);
+        if (toast) {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+    }
+    
     function openSkillModal(technicianId, technicianName) {
         document.getElementById('modal-technician-name').textContent = technicianName;
         const modal = document.getElementById('skill-modal');
@@ -244,8 +321,13 @@
         html += '</div>';
         content.innerHTML = html;
         
-        // Load device types
-        loadDeviceTypes();
+        // Load device types and update button state after loading
+        loadDeviceTypes(technicianId).then(() => {
+            // Update button state after device types are loaded
+            setTimeout(() => {
+                updateAddButtonState();
+            }, 100);
+        });
     }
     
     function loadDeviceTypes(technicianId) {
@@ -300,16 +382,22 @@
         
         // Load device types if not already loaded
         loadDeviceTypes(technicianId).then(() => {
-            // Update button state - complexity is already "basic", so button will enable when device type is selected
+            // Update button state after device types are loaded
+            // Complexity is already "basic", so button will enable when device type is selected
             setTimeout(() => {
                 updateAddButtonState();
-                console.log('Button state updated. Device:', deviceSelect?.value, 'Complexity:', complexitySelect?.value, 'Button disabled:', document.getElementById('add-skill-submit-btn')?.disabled);
             }, 100);
+        }).catch(error => {
+            console.error('Error loading device types:', error);
+            showToast('Error loading device types', 'error');
         });
         
-        // Also update button state immediately when device type changes
+        // Update button state when device type changes
         if (deviceSelect) {
-            deviceSelect.addEventListener('change', updateAddButtonState, { once: false });
+            // Remove any existing listeners to avoid duplicates
+            const newSelect = deviceSelect.cloneNode(true);
+            deviceSelect.parentNode.replaceChild(newSelect, deviceSelect);
+            document.getElementById('device-type-select').addEventListener('change', updateAddButtonState);
         }
     }
     
@@ -402,7 +490,9 @@
         .then(response => {
             if (!response.ok) {
                 return response.json().then(err => {
-                    throw new Error(err.message || 'Failed to add skill');
+                    // Handle 422 validation errors (e.g., skill already exists)
+                    const errorMessage = err.message || err.error || 'Failed to add skill';
+                    throw new Error(errorMessage);
                 });
             }
             return response.json();
@@ -470,7 +560,7 @@
         })
         .catch(error => {
             console.error('Error deleting skill:', error);
-            alert('Error deleting skill. Please try again.');
+            showToast('Error deleting skill. Please try again.', 'error');
         });
     }
 </script>
