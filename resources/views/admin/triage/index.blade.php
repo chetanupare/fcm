@@ -229,6 +229,61 @@
         location.reload();
     }, 60000); // Changed to 60 seconds since we have real-time countdown
 
+    // Define modal functions globally - MUST be before Alpine.js initializes
+    window.openAssignModal = function(ticketId) {
+        console.log('=== openAssignModal called for ticket:', ticketId);
+        
+        // Get Alpine component
+        const alpineComponent = document.querySelector('[x-data]')?.__x;
+        if (alpineComponent) {
+            alpineComponent.$data.selectedTicket = ticketId;
+            alpineComponent.$data.assignModalOpen = true;
+            console.log('Modal state:', { assignModalOpen: alpineComponent.$data.assignModalOpen, selectedTicket: alpineComponent.$data.selectedTicket });
+        }
+        
+        window.currentTicketId = ticketId;
+        
+        // Force modal to show by removing inline style and x-cloak
+        setTimeout(() => {
+            const modal = document.querySelector('[x-show="assignModalOpen"]');
+            if (modal) {
+                console.log('Modal element found, removing inline style and x-cloak');
+                modal.style.display = '';
+                modal.removeAttribute('style');
+                modal.removeAttribute('x-cloak');
+                console.log('Modal should be visible now, display:', window.getComputedStyle(modal).display);
+            } else {
+                console.error('Modal element not found!');
+            }
+            
+            // Update form after modal is visible
+            if (typeof window.updateAssignForm === 'function') {
+                window.updateAssignForm(ticketId);
+            }
+        }, 100);
+    };
+    
+    window.submitAssignFormAlpine = function(event) {
+        console.log('=== Alpine submitAssignForm called ===', event);
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }
+        console.log('Calling handleAssignSubmit, available:', typeof window.handleAssignSubmit);
+        if (typeof window.handleAssignSubmit === 'function') {
+            try {
+                window.handleAssignSubmit(event);
+            } catch (error) {
+                console.error('Error calling handleAssignSubmit:', error);
+                alert('Error submitting form: ' + error.message);
+            }
+        } else {
+            console.error('handleAssignSubmit not available');
+            alert('Form handler not loaded. Please refresh.');
+        }
+    };
+
     // Function to update form when ticket is selected
     window.updateAssignForm = function(ticketId) {
         console.log('Updating form for ticket:', ticketId);
