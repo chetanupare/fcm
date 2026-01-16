@@ -116,6 +116,92 @@
     </div>
 </div>
 
+<!-- Assigned Tasks Table -->
+<div class="mt-8">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h3 class="text-2xl font-bold text-slate-800">Assigned Tasks</h3>
+            <p class="text-sm text-slate-500 mt-1">Monitor assigned and in-progress tickets</p>
+        </div>
+        <div class="px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-xs text-slate-500">Total Assigned</span>
+            <p class="text-2xl font-bold text-slate-800">{{ count($assignedTickets) }}</p>
+        </div>
+    </div>
+
+    @if(count($assignedTickets) > 0)
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Ticket ID</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Device</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Issue</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Technician</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Job Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Ticket Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned At</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @foreach($assignedTickets as $ticket)
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="text-sm font-semibold text-slate-800">#{{ $ticket['id'] }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-sm text-slate-800">{{ $ticket['customer'] }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-sm text-slate-600">{{ $ticket['device'] }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-sm text-slate-600 line-clamp-1">{{ Str::limit($ticket['issue'], 50) }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-sm font-medium text-slate-800">{{ $ticket['technician'] }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if($ticket['job_status'])
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                                            {{ $ticket['job_status'] === 'completed' ? 'bg-green-100 text-green-800' : 
+                                               ($ticket['job_status'] === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
+                                               'bg-yellow-100 text-yellow-800') }}">
+                                            {{ ucfirst(str_replace('_', ' ', $ticket['job_status'])) }}
+                                        </span>
+                                    @else
+                                        <span class="text-sm text-slate-400">-</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                                        {{ $ticket['status'] === 'in_progress' ? 'bg-indigo-100 text-indigo-800' : 
+                                           'bg-purple-100 text-purple-800' }}">
+                                        {{ ucfirst(str_replace('_', ' ', $ticket['status'])) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="text-sm text-slate-600">{{ $ticket['assigned_at'] ?? '-' }}</span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @else
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-lg p-12 text-center">
+            <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <p class="text-slate-500 text-lg font-medium">No assigned tasks</p>
+            <p class="text-slate-400 text-sm mt-1">All tickets are pending assignment</p>
+        </div>
+    @endif
+</div>
+
 <!-- Assign Modal - Glassmorphic -->
 <div x-show="assignModalOpen" 
      x-cloak

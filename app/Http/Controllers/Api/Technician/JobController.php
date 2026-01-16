@@ -56,6 +56,40 @@ class JobController extends Controller
         ]);
     }
 
+    public function assigned(Request $request)
+    {
+        $technician = $request->user()->technician;
+        
+        $jobs = Job::where('technician_id', $technician->id)
+            ->whereNotIn('status', ['offered', 'cancelled', 'completed'])
+            ->with(['ticket.device', 'ticket.customer'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'ticket_id' => $job->ticket_id,
+                    'device' => $job->ticket->device->brand . ' ' . $job->ticket->device->device_type,
+                    'issue' => $job->ticket->issue_description,
+                    'status' => $job->status,
+                    'address' => $job->ticket->address,
+                    'preferred_date' => $job->ticket->preferred_date,
+                    'preferred_time' => $job->ticket->preferred_time,
+                    'customer' => [
+                        'name' => $job->ticket->customer->name,
+                        'phone' => $job->ticket->customer->phone,
+                        'email' => $job->ticket->customer->email,
+                    ],
+                    'created_at' => $job->created_at->toIso8601String(),
+                    'updated_at' => $job->updated_at->toIso8601String(),
+                ];
+            });
+
+        return response()->json([
+            'jobs' => $jobs,
+        ]);
+    }
+
     public function accept(Request $request, int $id)
     {
         $job = Job::where('technician_id', $request->user()->technician->id)

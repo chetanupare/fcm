@@ -52,6 +52,33 @@ class TrackingController extends Controller
         ]);
     }
 
+    public function tickets(Request $request)
+    {
+        $tickets = Ticket::where('customer_id', $request->user()->id)
+            ->with(['device', 'activeJob.technician.user'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($ticket) {
+                $activeJob = $ticket->activeJob;
+                return [
+                    'id' => $ticket->id,
+                    'device' => $ticket->device->brand . ' ' . $ticket->device->device_type,
+                    'issue' => $ticket->issue_description,
+                    'status' => $ticket->status,
+                    'technician' => $activeJob && $activeJob->technician ? [
+                        'name' => $activeJob->technician->user->name,
+                        'phone' => $activeJob->technician->user->phone,
+                    ] : null,
+                    'created_at' => $ticket->created_at->toIso8601String(),
+                    'updated_at' => $ticket->updated_at->toIso8601String(),
+                ];
+            });
+
+        return response()->json([
+            'tickets' => $tickets,
+        ]);
+    }
+
     protected function buildTimeline(Ticket $ticket): array
     {
         $timeline = [];

@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:customer')->prefix('customer')->name('customer.')->group(function () {
         Route::post('/bookings', [BookingController::class, 'store']);
         Route::get('/devices', [TrackingController::class, 'devices']);
+        Route::get('/tickets', [TrackingController::class, 'tickets']);
         Route::get('/tickets/{ticketId}/track', [TrackingController::class, 'track']);
         
         // Ratings
@@ -60,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/location', [StatusController::class, 'updateLocation']);
         
         Route::get('/jobs/offered', [TechnicianJobController::class, 'offered']);
+        Route::get('/jobs/assigned', [TechnicianJobController::class, 'assigned']);
         Route::post('/jobs/{id}/accept', [TechnicianJobController::class, 'accept']);
         Route::post('/jobs/{id}/reject', [TechnicianJobController::class, 'reject']);
         Route::get('/jobs/{id}', [TechnicianJobController::class, 'show']);

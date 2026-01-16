@@ -36,6 +36,27 @@ class TriageController extends Controller
                 ];
             });
 
+        // Get assigned tickets with their jobs and technicians
+        $assignedTickets = Ticket::whereIn('status', ['assigned', 'in_progress'])
+            ->with(['customer', 'device', 'activeJob.technician.user'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($ticket) {
+                $job = $ticket->activeJob;
+                return [
+                    'id' => $ticket->id,
+                    'customer' => $ticket->customer->name,
+                    'device' => $ticket->device->brand . ' ' . $ticket->device->device_type,
+                    'issue' => $ticket->issue_description,
+                    'status' => $ticket->status,
+                    'priority' => $ticket->priority,
+                    'technician' => $job && $job->technician ? $job->technician->user->name : 'Unassigned',
+                    'job_status' => $job ? $job->status : null,
+                    'assigned_at' => $job ? $job->created_at->format('Y-m-d H:i') : null,
+                    'created_at' => $ticket->created_at->format('Y-m-d H:i'),
+                ];
+            });
+
         $technicians = Technician::with('user')
             ->where('status', 'on_duty')
             ->get()
@@ -48,7 +69,7 @@ class TriageController extends Controller
                 ];
             });
 
-        return view('admin.triage.index', compact('tickets', 'technicians'));
+        return view('admin.triage.index', compact('tickets', 'assignedTickets', 'technicians'));
     }
 
     public function assign(Request $request, int $ticketId)
