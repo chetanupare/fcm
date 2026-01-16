@@ -111,15 +111,29 @@ class JobController extends Controller
 
     public function accept(Request $request, int $id)
     {
+        $request->validate([
+            'allow_expired' => 'nullable|boolean',
+        ]);
+
         $job = Job::where('technician_id', $request->user()->technician->id)
             ->findOrFail($id);
 
-        $result = $this->jobOfferService->accept($job);
+        $allowExpired = $request->input('allow_expired', false);
+        $result = $this->jobOfferService->accept($job, $allowExpired);
 
         if (!$result['success']) {
-            return response()->json([
+            $response = [
                 'message' => $result['message'],
-            ], 422);
+            ];
+            
+            // Include expired info if offer is expired
+            if (isset($result['expired']) && $result['expired']) {
+                $response['expired'] = true;
+                $response['expired_minutes'] = $result['expired_minutes'] ?? 0;
+                $response['can_accept_expired'] = true; // Allow frontend to show option
+            }
+            
+            return response()->json($response, 422);
         }
 
         // Return job with customer details (now revealed)

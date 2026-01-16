@@ -17,7 +17,7 @@ class JobOfferService
         $this->notificationService = $notificationService;
     }
 
-    public function accept(Job $job): array
+    public function accept(Job $job, bool $allowExpired = false): array
     {
         if (!$job->isOffered()) {
             return [
@@ -26,11 +26,29 @@ class JobOfferService
             ];
         }
 
-        if ($job->isOfferExpired()) {
+        $isExpired = $job->isOfferExpired();
+        $expiredMinutes = $isExpired && $job->offer_deadline_at 
+            ? now()->diffInMinutes($job->offer_deadline_at) 
+            : 0;
+
+        // Allow accepting expired offers if:
+        // 1. allowExpired flag is true (from API with confirmation)
+        // 2. Or expired less than 30 minutes ago (grace period)
+        if ($isExpired && !$allowExpired && $expiredMinutes > 30) {
             return [
                 'success' => false,
                 'message' => "Job offer has expired. The deadline was " . $job->offer_deadline_at->format('M d, Y h:i A'),
+                'expired' => true,
+                'expired_minutes' => $expiredMinutes,
             ];
+        }
+
+        // If expired but within grace period, extend the deadline
+        if ($isExpired && $expiredMinutes <= 30) {
+            $offerTimeout = \App\Models\Setting::get('job_offer_timeout_minutes', 5);
+            $job->update([
+                'offer_deadline_at' => now()->addMinutes($offerTimeout),
+            ]);
         }
 
         $job->update([
