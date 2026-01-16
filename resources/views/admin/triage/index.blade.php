@@ -677,7 +677,7 @@
         </div>
         
         <!-- No Recommendations Message -->
-        <div x-show="!loadingRecommendations && recommendations && recommendations.length === 0" 
+        <div x-show="!loadingRecommendations && recommendations !== null && recommendations !== undefined && recommendations.length === 0" 
              x-transition
              class="mb-6 text-center py-4 border border-slate-200 rounded-lg bg-slate-50">
             <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
