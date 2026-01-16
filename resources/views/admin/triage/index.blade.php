@@ -473,6 +473,26 @@
         }, 100);
     };
     
+    // Close modal function
+    window.closeAssignModal = function() {
+        console.log('=== closeAssignModal called ===');
+        const alpineComponent = document.querySelector('[x-data]')?.__x;
+        if (alpineComponent) {
+            alpineComponent.$data.assignModalOpen = false;
+            alpineComponent.$data.selectedTicket = null;
+            alpineComponent.$data.selectedTechnician = null;
+            alpineComponent.$data.recommendations = [];
+            alpineComponent.$data.loadingRecommendations = false;
+            console.log('Modal closed, state:', alpineComponent.$data.assignModalOpen);
+        } else {
+            // Fallback: directly hide the modal
+            const modal = document.getElementById('assign-modal-overlay');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+    };
+    
     window.submitAssignFormAlpine = function(event) {
         console.log('=== Alpine submitAssignForm called ===', event);
         if (event) {
