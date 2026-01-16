@@ -518,6 +518,9 @@
         }
     };
 
+    // Track which ticket is currently loading recommendations to prevent duplicates
+    let loadingRecommendationsForTicket = null;
+    
     // Function to load recommendations for a ticket
     function loadRecommendations(ticketId, alpineComponent) {
         if (!ticketId) {
@@ -525,38 +528,31 @@
             return;
         }
         
+        // Prevent duplicate loads
+        if (loadingRecommendationsForTicket === ticketId) {
+            console.log('Recommendations already loading for ticket:', ticketId);
+            return;
+        }
+        
         if (!alpineComponent) {
-            // Try to get Alpine component with retry
             const element = document.querySelector('[x-data]');
-            if (element) {
-                // Wait for Alpine to initialize
-                if (typeof Alpine !== 'undefined' && element.__x) {
-                    alpineComponent = element.__x;
-                } else {
-                    // Alpine not ready yet, retry after a short delay
-                    console.warn('Alpine component not ready yet, will retry in 300ms');
-                    setTimeout(() => {
-                        const retryElement = document.querySelector('[x-data]');
-                        if (retryElement && retryElement.__x) {
-                            loadRecommendations(ticketId, retryElement.__x);
-                        } else {
-                            console.error('Alpine component still not ready after retry');
-                        }
-                    }, 300);
-                    return;
-                }
+            if (element && typeof Alpine !== 'undefined' && element.__x) {
+                alpineComponent = element.__x;
             } else {
-                console.warn('Alpine element not found, skipping recommendations load');
+                // Alpine not ready - don't retry here, let the caller handle it
+                console.warn('Alpine component not ready, skipping recommendations load');
                 return;
             }
         }
         
-        if (!alpineComponent) {
-            console.warn('Alpine component not found, skipping recommendations load');
+        if (!alpineComponent || !alpineComponent.$data) {
+            console.warn('Alpine component or $data not available, skipping recommendations load');
             return;
         }
         
+        loadingRecommendationsForTicket = ticketId;
         console.log('Loading recommendations for ticket:', ticketId);
+        
         // Initialize recommendations array if it doesn't exist
         if (!alpineComponent.$data.recommendations) {
             alpineComponent.$data.recommendations = [];
@@ -608,7 +604,28 @@
     }
 
     // Function to update form when ticket is selected
+    window.lastUpdatedTicketId = null;
+    let isUpdatingForm = false;
+    
     window.updateAssignForm = function(ticketId) {
+        // Prevent concurrent updates
+        if (isUpdatingForm) {
+            return;
+        }
+        
+        // Don't update if it's the same ticket
+        if (window.lastUpdatedTicketId === ticketId) {
+            return;
+        }
+        
+        if (!ticketId) {
+            console.warn('No ticket ID provided to updateAssignForm');
+            return;
+        }
+        
+        isUpdatingForm = true;
+        window.lastUpdatedTicketId = ticketId;
+        
         console.log('Updating form for ticket:', ticketId);
         const form = document.getElementById('assign-form');
         const ticketInput = document.getElementById('ticket-id-input');
@@ -620,8 +637,22 @@
             console.error('Form elements not found');
         }
         
-        // Load recommendations
-        loadRecommendations(ticketId);
+        // Load recommendations - wait for Alpine to be ready
+        setTimeout(() => {
+            const element = document.querySelector('[x-data]');
+            if (element && typeof Alpine !== 'undefined' && element.__x) {
+                loadRecommendations(ticketId, element.__x);
+            } else {
+                // Retry once after a delay
+                setTimeout(() => {
+                    const retryElement = document.querySelector('[x-data]');
+                    if (retryElement && retryElement.__x) {
+                        loadRecommendations(ticketId, retryElement.__x);
+                    }
+                }, 500);
+            }
+            isUpdatingForm = false;
+        }, 200);
     };
 
     // Handle form submission directly - define early
@@ -722,12 +753,15 @@
         console.log('Alpine.js loaded:', typeof Alpine !== 'undefined');
         
         // Update form when modal opens and attach submit handler
+        // Only observe the modal element, not the entire container
         let observerActive = false;
         let lastObserverCheck = 0;
+        let lastModalState = false;
+        
         const observer = new MutationObserver(function(mutations) {
-            // Throttle observer to prevent infinite loops (max once per 500ms)
+            // Throttle observer to prevent infinite loops (max once per 1000ms)
             const now = Date.now();
-            if (observerActive || (now - lastObserverCheck) < 500) {
+            if (observerActive || (now - lastObserverCheck) < 1000) {
                 return;
             }
             
@@ -736,33 +770,44 @@
             
             try {
                 const modal = document.querySelector('[x-show="assignModalOpen"]');
-                if (modal) {
-                    // Check if modal is actually visible using computed styles
-                    const computedStyle = window.getComputedStyle(modal);
-                    const isVisible = computedStyle.display !== 'none' && 
-                                     computedStyle.visibility !== 'hidden' &&
-                                     computedStyle.opacity !== '0';
+                if (!modal) {
+                    observerActive = false;
+                    return;
+                }
+                
+                // Check if modal is actually visible using computed styles
+                const computedStyle = window.getComputedStyle(modal);
+                const isVisible = computedStyle.display !== 'none' && 
+                                 computedStyle.visibility !== 'hidden' &&
+                                 computedStyle.opacity !== '0';
+                
+                // Only process if modal state changed (opened)
+                if (isVisible && !lastModalState) {
+                    lastModalState = true;
                     
-                    if (isVisible) {
-                        // Get ticket ID from Alpine or window
-                        let ticketId = window.currentTicketId;
-                        if (!ticketId) {
-                            const alpineElement = document.querySelector('[x-data]');
-                            if (alpineElement && alpineElement.__x) {
-                                ticketId = alpineElement.__x.$data?.selectedTicket;
-                            }
+                    // Get ticket ID from Alpine or window
+                    let ticketId = window.currentTicketId;
+                    if (!ticketId) {
+                        const alpineElement = document.querySelector('[x-data]');
+                        if (alpineElement && alpineElement.__x) {
+                            ticketId = alpineElement.__x.$data?.selectedTicket;
                         }
-                        
-                        // Only update if ticket ID changed and Alpine is ready
-                        if (ticketId && ticketId !== window.lastUpdatedTicketId) {
-                            const alpineComponent = getAlpineComponent();
-                            if (alpineComponent) {
-                                updateAssignForm(ticketId);
-                            } else {
-                                // Skip if Alpine isn't ready - it will be called when modal opens via openAssignModal
-                                console.log('Skipping updateAssignForm - Alpine not ready, will be handled by openAssignModal');
-                            }
+                    }
+                    
+                    // Only update if ticket ID changed and we have a valid ticket
+                    if (ticketId && ticketId !== window.lastUpdatedTicketId) {
+                        // Check if Alpine is ready before calling updateAssignForm
+                        const alpineElement = document.querySelector('[x-data]');
+                        if (alpineElement && alpineElement.__x) {
+                            updateAssignForm(ticketId);
+                        } else {
+                            // Alpine not ready - skip, openAssignModal will handle it
+                            console.log('Skipping updateAssignForm - Alpine not ready');
                         }
+                    }
+                } else if (!isVisible) {
+                    lastModalState = false;
+                }
                     
                     // Attach submit button click handler
                     const submitBtn = document.getElementById('assign-submit-btn');
