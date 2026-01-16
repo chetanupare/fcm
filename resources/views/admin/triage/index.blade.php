@@ -8,13 +8,20 @@
     assignModalOpen: false, 
     selectedTicket: null,
     submitAssignForm: function(event) {
-        console.log('=== Alpine submitAssignForm called ===');
+        console.log('=== Alpine submitAssignForm called ===', event);
         if (event) {
             event.preventDefault();
             event.stopPropagation();
+            event.stopImmediatePropagation();
         }
+        console.log('Calling handleAssignSubmit, available:', typeof window.handleAssignSubmit);
         if (typeof window.handleAssignSubmit === 'function') {
-            window.handleAssignSubmit(event);
+            try {
+                window.handleAssignSubmit(event);
+            } catch (error) {
+                console.error('Error calling handleAssignSubmit:', error);
+                alert('Error submitting form: ' + error.message);
+            }
         } else {
             console.error('handleAssignSubmit not available');
             alert('Form handler not loaded. Please refresh.');
@@ -170,8 +177,8 @@
                     Cancel
                 </button>
                 <button type="button" id="assign-submit-btn"
-                        @click="submitAssignForm($event)"
-                        onclick="console.log('=== onclick fallback fired ==='); if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); } window.handleAssignSubmit(e); } return false;"
+                        @click.stop="submitAssignForm($event)"
+                        onclick="console.log('=== onclick fallback fired ==='); if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); } window.handleAssignSubmit(e); } return false;"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
                 </button>
