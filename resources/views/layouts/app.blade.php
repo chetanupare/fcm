@@ -78,8 +78,15 @@
     <div class="fixed inset-0 -z-10 h-full w-full bg-white [background:radial-gradient(125%_125%_at_50%_10%,#fff_40%,#6366f1_100%)] opacity-20"></div>
     
     <div class="min-h-screen flex">
+        <!-- Mobile Menu Toggle -->
+        <button id="mobileMenuToggle" class="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-lg border border-slate-200 text-slate-600 hover:text-slate-900">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+
         <!-- Glassmorphic Sidebar -->
-        <aside class="fixed inset-y-0 left-0 w-64 glass border-r border-slate-200/50 z-50 shadow-xl">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 glass border-r border-slate-200/50 z-40 shadow-xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
             <div class="h-full flex flex-col p-6">
                 <div class="flex items-center gap-2 mb-10">
                     @if($logoUrl)
@@ -176,8 +183,8 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 ml-64">
-            <div class="p-8">
+        <main class="flex-1 ml-0 lg:ml-64">
+            <div class="p-4 md:p-6 lg:p-8">
                 @if(session('success'))
                     <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl shadow-sm">
                         {{ session('success') }}
@@ -196,6 +203,26 @@
     </div>
 
     @stack('scripts')
+    
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobileMenuToggle')?.addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('mobileMenuToggle');
+            if (window.innerWidth < 1024 && 
+                !sidebar.contains(event.target) && 
+                !toggle.contains(event.target) &&
+                !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+            }
+        });
+    </script>
     
     <!-- Footer -->
     @php
