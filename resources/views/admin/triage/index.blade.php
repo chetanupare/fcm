@@ -516,11 +516,31 @@
 
     // Function to load recommendations for a ticket
     function loadRecommendations(ticketId, alpineComponent) {
-        if (!alpineComponent) {
-            alpineComponent = document.querySelector('[x-data]')?.__x;
+        if (!ticketId) {
+            console.warn('No ticket ID provided to loadRecommendations');
+            return;
         }
+        
         if (!alpineComponent) {
-            console.error('Alpine component not found');
+            // Try to get Alpine component with retry
+            const element = document.querySelector('[x-data]');
+            if (element) {
+                // Wait for Alpine to initialize
+                if (typeof Alpine !== 'undefined' && element.__x) {
+                    alpineComponent = element.__x;
+                } else {
+                    // Alpine not ready yet, skip for now
+                    console.warn('Alpine component not ready yet, skipping recommendations load');
+                    return;
+                }
+            } else {
+                console.warn('Alpine element not found, skipping recommendations load');
+                return;
+            }
+        }
+        
+        if (!alpineComponent) {
+            console.warn('Alpine component not found, skipping recommendations load');
             return;
         }
         
