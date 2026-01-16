@@ -150,10 +150,21 @@
         window.currentTicketId = ticketId;
         
         // Wait for Alpine to be ready
+        let retryCount = 0;
+        const maxRetries = 20; // 20 * 50ms = 1 second max wait
+        
         const checkAlpine = () => {
+            retryCount++;
+            console.log(`checkAlpine attempt ${retryCount}/${maxRetries}`);
+            
             const element = document.querySelector('[x-data]');
+            console.log('Element found:', element ? 'Yes' : 'No');
+            console.log('Element __x:', element && element.__x ? 'Yes' : 'No');
+            console.log('Alpine defined:', typeof Alpine !== 'undefined' ? 'Yes' : 'No');
+            
             if (element && element.__x) {
                 const alpineComponent = element.__x;
+                console.log('Alpine component found! Setting modal state...');
                 alpineComponent.$data.selectedTicket = ticketId;
                 alpineComponent.$data.assignModalOpen = true;
                 alpineComponent.$data.selectedTechnician = null;
@@ -188,7 +199,25 @@
                 }
             } else {
                 // Retry if Alpine not ready yet
-                setTimeout(checkAlpine, 50);
+                if (retryCount < maxRetries) {
+                    console.log(`Alpine not ready, retrying in 50ms... (attempt ${retryCount}/${maxRetries})`);
+                    setTimeout(checkAlpine, 50);
+                } else {
+                    console.error('ERROR: Alpine component not found after', maxRetries, 'attempts!');
+                    console.error('Trying to load recommendations anyway...');
+                    // Try to load recommendations even if Alpine isn't ready
+                    if (typeof window.loadRecommendations === 'function') {
+                        const element = document.querySelector('[x-data]');
+                        if (element) {
+                            // Wait a bit more and try again
+                            setTimeout(() => {
+                                if (element.__x) {
+                                    window.loadRecommendations(ticketId, element.__x);
+                                }
+                            }, 200);
+                        }
+                    }
+                }
             }
         };
         checkAlpine();
