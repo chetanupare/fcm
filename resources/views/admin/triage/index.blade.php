@@ -582,8 +582,11 @@
         })
         .then(data => {
             console.log('Recommendations data received:', data);
-            alpineComponent.$data.recommendations = data.recommendations || [];
-            alpineComponent.$data.loadingRecommendations = false;
+            if (alpineComponent && alpineComponent.$data) {
+                alpineComponent.$data.recommendations = data.recommendations || [];
+                alpineComponent.$data.loadingRecommendations = false;
+            }
+            loadingRecommendationsForTicket = null;
             
             if (data.recommendations && data.recommendations.length === 0) {
                 console.warn('No recommendations found for ticket:', ticketId);
@@ -591,8 +594,11 @@
         })
         .catch(error => {
             console.error('Error loading recommendations:', error);
-            alpineComponent.$data.loadingRecommendations = false;
-            alpineComponent.$data.recommendations = [];
+            if (alpineComponent && alpineComponent.$data) {
+                alpineComponent.$data.loadingRecommendations = false;
+                alpineComponent.$data.recommendations = [];
+            }
+            loadingRecommendationsForTicket = null;
             
             // Show user-friendly error message
             if (typeof alert !== 'undefined') {
@@ -747,9 +753,15 @@
                             }
                         }
                         
-                        // Only update if ticket ID changed
+                        // Only update if ticket ID changed and Alpine is ready
                         if (ticketId && ticketId !== window.lastUpdatedTicketId) {
-                            updateAssignForm(ticketId);
+                            const alpineComponent = getAlpineComponent();
+                            if (alpineComponent) {
+                                updateAssignForm(ticketId);
+                            } else {
+                                // Skip if Alpine isn't ready - it will be called when modal opens via openAssignModal
+                                console.log('Skipping updateAssignForm - Alpine not ready, will be handled by openAssignModal');
+                            }
                         }
                     
                     // Attach submit button click handler
