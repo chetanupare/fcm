@@ -22,6 +22,35 @@ header('Content-Type: text/plain');
 try {
     echo "Starting device data import...\n\n";
     
+    // First, check if required tables exist
+    echo "=== Step 1: Checking Database Tables ===\n";
+    $requiredTables = ['device_types', 'device_brands', 'device_models'];
+    $missingTables = [];
+    
+    foreach ($requiredTables as $table) {
+        if (Schema::hasTable($table)) {
+            echo "✅ Table `{$table}` exists\n";
+        } else {
+            echo "❌ Table `{$table}` is MISSING!\n";
+            $missingTables[] = $table;
+        }
+    }
+    
+    if (!empty($missingTables)) {
+        echo "\n❌ ERROR: Required database tables are missing!\n";
+        echo "\n⚠️  You must run migrations first!\n";
+        echo "Visit: migrate.php?password=YOUR_PASSWORD\n";
+        echo "Or run: php artisan migrate\n\n";
+        echo "Required migrations:\n";
+        echo "  - 2026_01_16_100000_create_device_types_table.php\n";
+        echo "  - 2026_01_16_100100_create_device_brands_table.php\n";
+        echo "  - 2026_01_16_100200_create_device_models_table.php\n";
+        echo "  - 2026_01_16_100300_update_devices_table_add_foreign_keys.php\n";
+        exit(1);
+    }
+    
+    echo "✅ All required tables exist. Proceeding with data import...\n\n";
+    
     // Check CSV files
     $csvPath = __DIR__ . '/../database/data/';
     $files = ['all_mobile_phone_brands.csv', 'laptops.csv', 'printers-scanner.csv'];
