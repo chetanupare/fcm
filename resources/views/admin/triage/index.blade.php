@@ -129,11 +129,12 @@
                 </svg>
             </button>
         </div>
-        <form :action="`/admin/triage/${selectedTicket}/assign`" method="POST">
+        <form :action="`/admin/triage/${selectedTicket}/assign`" method="POST" id="assign-form">
             @csrf
+            <input type="hidden" name="ticket_id" :value="selectedTicket">
             <div class="mb-6">
                 <label class="block text-sm font-medium text-slate-700 mb-2">Select Technician</label>
-                <select name="technician_id" required 
+                <select name="technician_id" id="technician-select" required 
                         class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                     <option value="">Choose a technician...</option>
                     @foreach($technicians as $tech)
@@ -150,7 +151,7 @@
                         class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium">
                     Cancel
                 </button>
-                <button type="submit" 
+                <button type="submit" id="assign-submit-btn"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
                 </button>
@@ -170,5 +171,59 @@
     setInterval(() => {
         location.reload();
     }, 30000);
+
+    // Fix form submission for assign modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const assignForm = document.getElementById('assign-form');
+        if (assignForm) {
+            assignForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const form = this;
+                const formData = new FormData(form);
+                const ticketId = form.querySelector('input[name="ticket_id"]').value;
+                const technicianId = form.querySelector('select[name="technician_id"]').value;
+                
+                if (!technicianId) {
+                    alert('Please select a technician');
+                    return;
+                }
+                
+                // Disable submit button
+                const submitBtn = form.querySelector('#assign-submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Assigning...';
+                
+                // Submit via fetch
+                fetch(`/admin/triage/${ticketId}/assign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || formData.get('_token')
+                    },
+                    body: JSON.stringify({
+                        technician_id: parseInt(technicianId),
+                        _token: formData.get('_token')
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    return response.json().then(err => Promise.reject(err));
+                })
+                .then(data => {
+                    alert('Ticket assigned successfully!');
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message || 'Failed to assign ticket. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Assign Now';
+                });
+            });
+        }
+    });
 </script>
 @endpush

@@ -60,6 +60,11 @@ class TriageController extends Controller
         $technician = Technician::findOrFail($request->technician_id);
 
         if (!$technician->isAvailable()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Technician is not available',
+                ], 422);
+            }
             return back()->withErrors(['technician' => 'Technician is not available']);
         }
 
@@ -67,7 +72,18 @@ class TriageController extends Controller
         $assigned = $autoAssignService->assign($ticket);
 
         if (!$assigned) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to assign technician',
+                ], 500);
+            }
             return back()->withErrors(['error' => 'Failed to assign technician']);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Ticket assigned successfully',
+            ]);
         }
 
         return redirect()->route('admin.triage.index')
