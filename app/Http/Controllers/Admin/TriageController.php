@@ -83,6 +83,12 @@ class TriageController extends Controller
     /**
      * Get recommended technicians for a ticket (with distance and skill scores)
      */
+    /**
+     * Get recommended technicians for a ticket (with distance and skill scores)
+     * 
+     * @param int $ticketId
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function getRecommendedTechnicians(int $ticketId)
     {
         try {

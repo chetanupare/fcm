@@ -566,7 +566,11 @@
         }
         alpineComponent.$data.loadingRecommendations = true;
         
-        fetch(`/admin/triage/${ticketId}/recommendations`, {
+        const url = `/admin/triage/${ticketId}/recommendations`;
+        console.log('Fetching recommendations from:', url);
+        
+        fetch(url, {
+            method: 'GET',
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
