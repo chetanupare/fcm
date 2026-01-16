@@ -22,6 +22,8 @@ class Ticket extends Model
         'preferred_date',
         'preferred_time',
         'photos',
+        'device_images',
+        'device_images_uploaded_at',
         'status',
         'priority',
         'triage_deadline_at',
@@ -33,6 +35,8 @@ class Ticket extends Model
     {
         return [
             'photos' => 'array',
+            'device_images' => 'array',
+            'device_images_uploaded_at' => 'datetime',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
             'preferred_date' => 'date',
