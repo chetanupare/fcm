@@ -719,13 +719,25 @@
         setTimeout(() => {
             const element = document.querySelector('[x-data]');
             if (element && typeof Alpine !== 'undefined' && element.__x) {
-                loadRecommendations(ticketId, element.__x);
+                console.log('updateAssignForm: Loading recommendations via Alpine component');
+                if (typeof window.loadRecommendations === 'function') {
+                    window.loadRecommendations(ticketId, element.__x);
+                } else if (typeof loadRecommendations === 'function') {
+                    loadRecommendations(ticketId, element.__x);
+                } else {
+                    console.error('loadRecommendations function not found in updateAssignForm');
+                }
             } else {
                 // Retry once after a delay
                 setTimeout(() => {
                     const retryElement = document.querySelector('[x-data]');
                     if (retryElement && retryElement.__x) {
-                        loadRecommendations(ticketId, retryElement.__x);
+                        console.log('updateAssignForm: Retrying to load recommendations');
+                        if (typeof window.loadRecommendations === 'function') {
+                            window.loadRecommendations(ticketId, retryElement.__x);
+                        } else if (typeof loadRecommendations === 'function') {
+                            loadRecommendations(ticketId, retryElement.__x);
+                        }
                     }
                 }, 500);
             }
