@@ -393,31 +393,21 @@
                                 }
                             }
                             
-                            // Try to update Alpine if it becomes available - with multiple retries
+                            // Try to update Alpine if it becomes available - limited retries
                             let alpineRetryCount = 0;
+                            const maxRetries = 10;
                             const tryUpdateAlpine = () => {
-                                alpineRetryCount++;
                                 const el = document.querySelector('[x-data]');
                                 if (el && el.__x) {
-                                    
-                                    el.__x.$data.recommendations = window.pendingRecommendations.recommendations;
+                                    el.__x.$data.recommendations = data.recommendations || [];
                                     el.__x.$data.loadingRecommendations = false;
-                                    
-                                    delete window.pendingRecommendations; // Clean up
-                                } else if (alpineRetryCount < 40) { // Try for up to 2 seconds
+                                    delete window.pendingRecommendations;
+                                } else if (alpineRetryCount < maxRetries) {
+                                    alpineRetryCount++;
                                     setTimeout(tryUpdateAlpine, 50);
                                 } else {
-                                    
-                                    // Manually render recommendations in the modal
-                                    const recommendationsToRender = data.recommendations || [];
-                                    renderRecommendationsManually(recommendationsToRender);
-                                    
-                                    // If no recommendations after manual render, show message
-                                    if (recommendationsToRender.length === 0) {
-                                        const noRecommendationsMsg = document.getElementById('no-recommendations-message');
-                                        if (noRecommendationsMsg) {
-                                            noRecommendationsMsg.style.display = 'block';
-                                        }
+                                    if (window.renderRecommendationsManually) {
+                                        window.renderRecommendationsManually(data.recommendations || []);
                                     }
                                 }
                             };
@@ -1095,10 +1085,7 @@
         const recommendationsSection = document.querySelector('[x-show="recommendations && recommendations.length > 0"]');
         const recommendationsList = recommendationsSection ? recommendationsSection.querySelector('.space-y-2') : null;
         
-        if (!recommendationsList) {
-            
-            return;
-        }
+        if (!recommendationsList) return;
         
         // Show the recommendations container
         if (recommendationsSection) {
@@ -1159,14 +1146,9 @@
             `;
             recommendationsList.appendChild(recDiv);
         });
-        
-        
     }
     
     document.addEventListener('DOMContentLoaded', function() {
-        
-        
-        
         // Simplified form submission handler
         document.addEventListener('submit', function(e) {
             if (e.target.id === 'assign-form') {
