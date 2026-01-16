@@ -30,16 +30,15 @@ try {
         // Phase 1: Core Features
         '2026_01_18_000001_create_amc_contracts_table',
         '2026_01_18_000002_create_expenses_table',
-        '2026_01_18_000003_create_permissions_table',
-        '2026_01_18_000004_create_role_permissions_table',
-        '2026_01_18_000005_create_user_permissions_table',
-        '2026_01_18_000006_create_invoices_table',
-        '2026_01_18_000007_create_tasks_table',
-        '2026_01_18_000008_create_pos_transactions_table',
-        '2026_01_18_000009_create_delivery_otps_table',
-        '2026_01_18_000010_create_digital_signatures_table',
-        '2026_01_18_000011_create_leads_table',
-        '2026_01_18_000012_create_outsource_vendors_and_requests_table',
+        '2026_01_18_000003_create_permissions_table', // Creates permissions, role_permissions, and user_permissions
+        '2026_01_18_000004_create_invoices_table', // Renumbered from 000006
+        '2026_01_18_000005_create_tasks_table', // Renumbered from 000007
+        '2026_01_18_000006_create_pos_transactions_table', // Renumbered from 000008
+        '2026_01_18_000007_create_delivery_otps_table', // Renumbered from 000009
+        '2026_01_18_000008_create_digital_signatures_table', // Renumbered from 000010
+        '2026_01_18_000009_create_leads_table', // Renumbered from 000011
+        '2026_01_18_000010_create_outsource_vendors_table',
+        '2026_01_18_000011_create_outsource_requests_table',
         
         // Phase 2: Enhanced Features
         '2026_01_18_000013_create_data_recovery_jobs_table',
