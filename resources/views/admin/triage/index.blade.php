@@ -10,6 +10,8 @@
     window.openAssignModal = function(ticketId) {
         console.log('=== openAssignModal called for ticket:', ticketId);
         
+        window.currentTicketId = ticketId;
+        
         // Wait for Alpine to be ready
         const checkAlpine = () => {
             const element = document.querySelector('[x-data]');
@@ -18,32 +20,21 @@
                 alpineComponent.$data.selectedTicket = ticketId;
                 alpineComponent.$data.assignModalOpen = true;
                 alpineComponent.$data.selectedTechnician = null;
+                alpineComponent.$data.recommendations = [];
+                alpineComponent.$data.loadingRecommendations = false;
                 console.log('Modal state:', { assignModalOpen: alpineComponent.$data.assignModalOpen, selectedTicket: alpineComponent.$data.selectedTicket });
                 
-                // Load recommendations - ensure function is available
-                if (ticketId) {
-                    console.log('Attempting to load recommendations for ticket:', ticketId);
-                    console.log('loadRecommendations function available:', typeof loadRecommendations === 'function');
-                    console.log('window.loadRecommendations available:', typeof window.loadRecommendations === 'function');
-                    
-                    // Try both local and window-scoped function
-                    if (typeof loadRecommendations === 'function') {
-                        console.log('Calling loadRecommendations...');
-                        loadRecommendations(ticketId, alpineComponent);
-                    } else if (typeof window.loadRecommendations === 'function') {
-                        console.log('Calling window.loadRecommendations...');
-                        window.loadRecommendations(ticketId, alpineComponent);
-                    } else {
-                        console.error('loadRecommendations function not found!');
-                        // Fallback: call it directly after a delay
-                        setTimeout(() => {
-                            if (typeof loadRecommendations === 'function') {
-                                loadRecommendations(ticketId, alpineComponent);
-                            } else if (typeof window.loadRecommendations === 'function') {
-                                window.loadRecommendations(ticketId, alpineComponent);
-                            }
-                        }, 200);
-                    }
+                // Load recommendations immediately
+                console.log('=== LOADING RECOMMENDATIONS FROM openAssignModal ===');
+                console.log('Ticket ID:', ticketId);
+                console.log('Alpine component:', alpineComponent ? 'Found' : 'Missing');
+                console.log('window.loadRecommendations:', typeof window.loadRecommendations);
+                
+                if (ticketId && typeof window.loadRecommendations === 'function') {
+                    console.log('Calling window.loadRecommendations NOW...');
+                    window.loadRecommendations(ticketId, alpineComponent);
+                } else {
+                    console.error('window.loadRecommendations not available!');
                 }
             } else {
                 // Retry if Alpine not ready yet
@@ -51,8 +42,6 @@
             }
         };
         checkAlpine();
-        
-        window.currentTicketId = ticketId;
         
         // Force modal to show
         setTimeout(() => {
@@ -69,14 +58,16 @@
                 window.updateAssignForm(ticketId);
             }
             
-            // Also ensure recommendations are loaded after modal is visible
+            // Also ensure recommendations are loaded after modal is visible (fallback)
             setTimeout(() => {
                 const element = document.querySelector('[x-data]');
                 if (element && element.__x) {
                     const alpineComponent = element.__x;
-                    console.log('Modal visible, ensuring recommendations are loaded...');
+                    console.log('=== FALLBACK: Loading recommendations after modal visible ===');
                     if (typeof window.loadRecommendations === 'function') {
                         window.loadRecommendations(ticketId, alpineComponent);
+                    } else {
+                        console.error('window.loadRecommendations still not available in fallback!');
                     }
                 }
             }, 300);
