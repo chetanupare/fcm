@@ -4,58 +4,7 @@
 @section('page-title', 'Triage Queue')
 
 @section('content')
-<div class="space-y-6" x-data="{ 
-    assignModalOpen: false, 
-    selectedTicket: null,
-    openAssignModal: function(ticketId) {
-        console.log('=== openAssignModal called for ticket:', ticketId);
-        this.selectedTicket = ticketId;
-        this.assignModalOpen = true;
-        window.currentTicketId = ticketId;
-        console.log('Modal state:', { assignModalOpen: this.assignModalOpen, selectedTicket: this.selectedTicket });
-        
-        // Force modal to show by removing inline style and x-cloak
-        this.$nextTick(() => {
-            const modal = document.querySelector('[x-show="assignModalOpen"]');
-            if (modal) {
-                console.log('Modal element found, removing inline style and x-cloak');
-                modal.style.display = '';
-                modal.removeAttribute('style');
-                modal.removeAttribute('x-cloak');
-                console.log('Modal should be visible now, display:', window.getComputedStyle(modal).display);
-            } else {
-                console.error('Modal element not found!');
-            }
-        });
-        
-        // Update form after a brief delay to ensure modal is visible
-        setTimeout(() => {
-            if (typeof updateAssignForm === 'function') {
-                updateAssignForm(ticketId);
-            }
-        }, 200);
-    },
-    submitAssignForm: function(event) {
-        console.log('=== Alpine submitAssignForm called ===', event);
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-        }
-        console.log('Calling handleAssignSubmit, available:', typeof window.handleAssignSubmit);
-        if (typeof window.handleAssignSubmit === 'function') {
-            try {
-                window.handleAssignSubmit(event);
-            } catch (error) {
-                console.error('Error calling handleAssignSubmit:', error);
-                alert('Error submitting form: ' + error.message);
-            }
-        } else {
-            console.error('handleAssignSubmit not available');
-            alert('Form handler not loaded. Please refresh.');
-        }
-    }
-}">
+<div class="space-y-6" x-data="{ assignModalOpen: false, selectedTicket: null }">
     <!-- Header with Stats -->
     <div class="flex items-center justify-between">
         <div>
