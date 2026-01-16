@@ -13,12 +13,27 @@
         this.assignModalOpen = true;
         window.currentTicketId = ticketId;
         console.log('Modal state:', { assignModalOpen: this.assignModalOpen, selectedTicket: this.selectedTicket });
+        
+        // Force modal to show by removing inline style and x-cloak
+        this.$nextTick(() => {
+            const modal = document.querySelector('[x-show="assignModalOpen"]');
+            if (modal) {
+                console.log('Modal element found, removing inline style and x-cloak');
+                modal.style.display = '';
+                modal.removeAttribute('style');
+                modal.removeAttribute('x-cloak');
+                console.log('Modal should be visible now, display:', window.getComputedStyle(modal).display);
+            } else {
+                console.error('Modal element not found!');
+            }
+        });
+        
         // Update form after a brief delay to ensure modal is visible
         setTimeout(() => {
             if (typeof updateAssignForm === 'function') {
                 updateAssignForm(ticketId);
             }
-        }, 100);
+        }, 200);
     },
     submitAssignForm: function(event) {
         console.log('=== Alpine submitAssignForm called ===', event);
@@ -162,8 +177,7 @@
      x-transition:leave-start="opacity-100"
      x-transition:leave-end="opacity-0"
      @click.away="assignModalOpen = false"
-     class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-     style="display: none !important;">
+     class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div @click.stop class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all ticket-enter">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl font-bold text-slate-800">Assign Technician</h3>
