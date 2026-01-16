@@ -316,6 +316,15 @@
             <p class="text-sm text-slate-500 mt-2">Loading recommendations...</p>
         </div>
         
+        <!-- No Recommendations Message -->
+        <div x-show="!loadingRecommendations && (!recommendations || recommendations.length === 0)" class="mb-6 text-center py-4 border border-slate-200 rounded-lg bg-slate-50">
+            <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-sm text-slate-500">No recommendations available</p>
+            <p class="text-xs text-slate-400 mt-1">All technicians may be busy or unavailable</p>
+        </div>
+        
         <form method="POST" id="assign-form" action="" data-base-url="/admin/triage">
             @csrf
             <input type="hidden" name="ticket_id" id="ticket-id-input" value="">
@@ -483,21 +492,51 @@
         if (!alpineComponent) {
             alpineComponent = document.querySelector('[x-data]')?.__x;
         }
-        if (!alpineComponent) return;
+        if (!alpineComponent) {
+            console.error('Alpine component not found');
+            return;
+        }
         
+        console.log('Loading recommendations for ticket:', ticketId);
         alpineComponent.$data.loadingRecommendations = true;
         alpineComponent.$data.recommendations = [];
         
-        fetch(`/admin/triage/${ticketId}/recommendations`)
-            .then(response => response.json())
-            .then(data => {
-                alpineComponent.$data.recommendations = data.recommendations || [];
-                alpineComponent.$data.loadingRecommendations = false;
-            })
-            .catch(error => {
-                console.error('Error loading recommendations:', error);
-                alpineComponent.$data.loadingRecommendations = false;
-            });
+        fetch(`/admin/triage/${ticketId}/recommendations`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Recommendations data received:', data);
+            alpineComponent.$data.recommendations = data.recommendations || [];
+            alpineComponent.$data.loadingRecommendations = false;
+            
+            if (data.recommendations && data.recommendations.length === 0) {
+                console.warn('No recommendations found for ticket:', ticketId);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recommendations:', error);
+            alpineComponent.$data.loadingRecommendations = false;
+            alpineComponent.$data.recommendations = [];
+            
+            // Show user-friendly error message
+            if (typeof alert !== 'undefined') {
+                alert('Failed to load technician recommendations. Please try again.');
+            }
+        });
     }
 
     // Function to update form when ticket is selected

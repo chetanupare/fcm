@@ -85,48 +85,98 @@ class TriageController extends Controller
      */
     public function getRecommendedTechnicians(int $ticketId)
     {
-        $ticket = Ticket::with('device.deviceType')->findOrFail($ticketId);
-        
-        $technicians = Technician::where('status', 'on_duty')
-            ->where('active_jobs_count', 0)
-            ->with(['user', 'skills.deviceType'])
-            ->get();
-
-        $skillMatchingService = app(SkillMatchingService::class);
-        $distanceService = app(DistanceCalculationService::class);
-
-        $recommendations = $technicians->map(function ($technician) use ($ticket, $skillMatchingService, $distanceService) {
-            // Calculate skill match score
-            $skillScore = $skillMatchingService->calculateMatchScore($technician, $ticket);
+        try {
+            $ticket = Ticket::with('device.deviceType')->findOrFail($ticketId);
             
-            // Calculate distance
-            $distanceData = $distanceService->calculateTechnicianToTicketDistance($technician, $ticket);
-            
-            // Combined score
-            $combinedScore = 0;
-            if ($distanceData && $distanceData['distance_km'] !== null) {
-                $maxDistance = 50;
-                $distanceScore = max(0, 100 - (($distanceData['distance_km'] / $maxDistance) * 100));
-                $combinedScore = ($skillScore * 0.6) + ($distanceScore * 0.4);
-            } else {
-                $combinedScore = $skillScore * 0.6;
+            // Get available technicians (on duty and not busy)
+            $technicians = Technician::where('status', 'on_duty')
+                ->where(function($query) {
+                    $query->where('active_jobs_count', 0)
+                          ->orWhereNull('active_jobs_count');
+                })
+                ->with(['user', 'skills.deviceType'])
+                ->get();
+
+            if ($technicians->isEmpty()) {
+                return response()->json([
+                    'recommendations' => [],
+                    'message' => 'No available technicians found',
+                ]);
             }
 
-            return [
-                'id' => $technician->id,
-                'name' => $technician->user->name,
-                'skill_match_score' => round($skillScore, 1),
-                'distance_km' => $distanceData ? round($distanceData['distance_km'], 2) : null,
-                'estimated_duration_minutes' => $distanceData ? round($distanceData['duration_minutes'], 1) : null,
-                'combined_score' => round($combinedScore, 1),
-                'has_location' => $technician->latitude && $technician->longitude,
-                'is_on_call' => $technician->is_on_call ?? false,
-            ];
-        })->sortByDesc('combined_score')->take(5)->values();
+            $skillMatchingService = app(SkillMatchingService::class);
+            $distanceService = app(DistanceCalculationService::class);
 
-        return response()->json([
-            'recommendations' => $recommendations,
-        ]);
+            $recommendations = $technicians->map(function ($technician) use ($ticket, $skillMatchingService, $distanceService) {
+                try {
+                    // Calculate skill match score
+                    $skillScore = $skillMatchingService->calculateMatchScore($technician, $ticket);
+                    
+                    // Calculate distance
+                    $distanceData = null;
+                    if ($technician->latitude && $technician->longitude && $ticket->latitude && $ticket->longitude) {
+                        $distanceData = $distanceService->calculateTechnicianToTicketDistance($technician, $ticket);
+                    }
+                    
+                    // Combined score
+                    $combinedScore = 0;
+                    if ($distanceData && isset($distanceData['distance_km']) && $distanceData['distance_km'] !== null) {
+                        $maxDistance = 50;
+                        $distanceScore = max(0, 100 - (($distanceData['distance_km'] / $maxDistance) * 100));
+                        $combinedScore = ($skillScore * 0.6) + ($distanceScore * 0.4);
+                    } else {
+                        $combinedScore = $skillScore * 0.6;
+                    }
+
+                    return [
+                        'id' => $technician->id,
+                        'name' => $technician->user->name ?? 'Unknown',
+                        'skill_match_score' => round($skillScore, 1),
+                        'distance_km' => $distanceData ? round($distanceData['distance_km'] ?? 0, 2) : null,
+                        'estimated_duration_minutes' => $distanceData ? round($distanceData['duration_minutes'] ?? 0, 1) : null,
+                        'combined_score' => round($combinedScore, 1),
+                        'has_location' => (bool)($technician->latitude && $technician->longitude),
+                        'is_on_call' => (bool)($technician->is_on_call ?? false),
+                    ];
+                } catch (\Exception $e) {
+                    \Log::error('Error calculating recommendation for technician', [
+                        'technician_id' => $technician->id,
+                        'ticket_id' => $ticket->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    
+                    // Return basic recommendation even if calculation fails
+                    return [
+                        'id' => $technician->id,
+                        'name' => $technician->user->name ?? 'Unknown',
+                        'skill_match_score' => 50,
+                        'distance_km' => null,
+                        'estimated_duration_minutes' => null,
+                        'combined_score' => 30,
+                        'has_location' => false,
+                        'is_on_call' => false,
+                    ];
+                }
+            })->filter(function($rec) {
+                return $rec !== null;
+            })->sortByDesc('combined_score')->take(5)->values();
+
+            return response()->json([
+                'recommendations' => $recommendations,
+                'count' => $recommendations->count(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting recommended technicians', [
+                'ticket_id' => $ticketId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return response()->json([
+                'recommendations' => [],
+                'error' => 'Failed to load recommendations: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function assign(Request $request, int $ticketId)
