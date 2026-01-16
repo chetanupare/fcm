@@ -1178,18 +1178,3 @@
             }
         });
                     submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
-                });
-            }
-        });
-        
-        // Debug: Log button clicks
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('button[data-ticket-id]')) {
-                const btn = e.target.closest('button[data-ticket-id]');
-                console.log('Assign button clicked, ticket ID:', btn.getAttribute('data-ticket-id'));
-            }
-        });
-    });
-</script>
-@endpush
