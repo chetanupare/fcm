@@ -198,7 +198,7 @@ class JobController extends Controller
     public function updateStatus(Request $request, int $id)
     {
         $request->validate([
-            'status' => 'required|in:en_route,arrived,diagnosing,waiting_parts,repairing,quality_check,completed,no_show,cannot_repair',
+            'status' => 'required|in:accepted,en_route,component_pickup,arrived,diagnosing,quoted,signed_contract,repairing,waiting_parts,quality_check,waiting_payment,completed,released,no_show,cannot_repair',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'notes' => 'nullable|string|max:1000',
@@ -399,13 +399,19 @@ class JobController extends Controller
     protected function getValidTransitions(string $currentStatus): array
     {
         $transitions = [
-            'accepted' => ['en_route', 'arrived'],
-            'en_route' => ['arrived'],
+            'offered' => ['accepted'],
+            'accepted' => ['en_route', 'component_pickup'],
+            'en_route' => ['component_pickup', 'arrived'],
+            'component_pickup' => ['arrived', 'en_route'],
             'arrived' => ['diagnosing', 'no_show'],
-            'diagnosing' => ['waiting_parts', 'repairing', 'cannot_repair'],
+            'diagnosing' => ['quoted', 'waiting_parts', 'repairing', 'cannot_repair'],
+            'quoted' => ['signed_contract'],
+            'signed_contract' => ['repairing', 'waiting_parts'],
             'waiting_parts' => ['repairing'],
             'repairing' => ['quality_check'],
-            'quality_check' => ['completed'],
+            'quality_check' => ['waiting_payment', 'completed'],
+            'waiting_payment' => ['completed'],
+            'completed' => ['released'],
         ];
 
         return $transitions[$currentStatus] ?? [];

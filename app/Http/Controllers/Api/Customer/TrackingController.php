@@ -126,18 +126,74 @@ class TrackingController extends Controller
                 ];
             }
 
-            if ($activeJob->status === 'arrived') {
+            if ($activeJob->status === 'component_pickup') {
                 $timeline[] = [
-                    'status' => 'arrived',
-                    'note' => 'Technician arrived at location',
+                    'status' => 'component_pickup',
+                    'note' => 'Technician picking up components',
                     'created_at' => $activeJob->updated_at->toISOString(),
                 ];
             }
 
-            if (in_array($activeJob->status, ['diagnosing', 'repairing', 'quality_check'])) {
+            if ($activeJob->status === 'arrived') {
                 $timeline[] = [
-                    'status' => 'in_progress',
-                    'note' => 'Repair in progress',
+                    'status' => 'arrived',
+                    'note' => 'Technician reached location',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'diagnosing') {
+                $timeline[] = [
+                    'status' => 'diagnosing',
+                    'note' => 'Device diagnosed',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'quoted') {
+                $timeline[] = [
+                    'status' => 'quoted',
+                    'note' => 'Quote generated',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'signed_contract') {
+                $timeline[] = [
+                    'status' => 'signed_contract',
+                    'note' => 'Contract signed',
+                    'created_at' => $activeJob->contract_signed_at?->toISOString() ?? $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'repairing') {
+                $timeline[] = [
+                    'status' => 'repairing',
+                    'note' => 'Fixing device',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'waiting_parts') {
+                $timeline[] = [
+                    'status' => 'waiting_parts',
+                    'note' => 'Waiting for parts',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'quality_check') {
+                $timeline[] = [
+                    'status' => 'quality_check',
+                    'note' => 'Quality check in progress',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'waiting_payment') {
+                $timeline[] = [
+                    'status' => 'waiting_payment',
+                    'note' => 'Waiting for payment',
                     'created_at' => $activeJob->updated_at->toISOString(),
                 ];
             }
@@ -146,7 +202,15 @@ class TrackingController extends Controller
                 $timeline[] = [
                     'status' => 'completed',
                     'note' => 'Repair completed',
-                    'created_at' => ($activeJob->released_at ?? $activeJob->updated_at)->toISOString(),
+                    'created_at' => ($activeJob->payment_received_at ?? $activeJob->updated_at)->toISOString(),
+                ];
+            }
+
+            if ($activeJob->released_at) {
+                $timeline[] = [
+                    'status' => 'released',
+                    'note' => 'Job released',
+                    'created_at' => $activeJob->released_at->toISOString(),
                 ];
             }
         }

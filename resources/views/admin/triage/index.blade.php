@@ -165,11 +165,44 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     @if($ticket['job_status'])
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
-                                            {{ $ticket['job_status'] === 'completed' ? 'bg-green-100 text-green-800' : 
-                                               ($ticket['job_status'] === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
-                                               'bg-yellow-100 text-yellow-800') }}">
-                                            {{ ucfirst(str_replace('_', ' ', $ticket['job_status'])) }}
+                                        @php
+                                            $statusColors = [
+                                                'offered' => 'bg-yellow-100 text-yellow-800',
+                                                'accepted' => 'bg-blue-100 text-blue-800',
+                                                'en_route' => 'bg-purple-100 text-purple-800',
+                                                'component_pickup' => 'bg-violet-100 text-violet-800',
+                                                'arrived' => 'bg-indigo-100 text-indigo-800',
+                                                'diagnosing' => 'bg-yellow-100 text-yellow-800',
+                                                'quoted' => 'bg-teal-100 text-teal-800',
+                                                'signed_contract' => 'bg-emerald-100 text-emerald-800',
+                                                'repairing' => 'bg-orange-100 text-orange-800',
+                                                'waiting_parts' => 'bg-amber-100 text-amber-800',
+                                                'quality_check' => 'bg-cyan-100 text-cyan-800',
+                                                'waiting_payment' => 'bg-pink-100 text-pink-800',
+                                                'completed' => 'bg-green-100 text-green-800',
+                                                'released' => 'bg-slate-100 text-slate-800',
+                                            ];
+                                            $statusLabels = [
+                                                'offered' => 'Offered',
+                                                'accepted' => 'Accepted',
+                                                'en_route' => 'On My Way',
+                                                'component_pickup' => 'Component Pickup',
+                                                'arrived' => 'Reached',
+                                                'diagnosing' => 'Diagnosed',
+                                                'quoted' => 'Quoted',
+                                                'signed_contract' => 'Signed Contract',
+                                                'repairing' => 'Fixing',
+                                                'waiting_parts' => 'Waiting for Parts',
+                                                'quality_check' => 'Quality Check',
+                                                'waiting_payment' => 'Waiting for Payment',
+                                                'completed' => 'Completed',
+                                                'released' => 'Released',
+                                            ];
+                                            $color = $statusColors[$ticket['job_status']] ?? 'bg-slate-100 text-slate-800';
+                                            $label = $statusLabels[$ticket['job_status']] ?? ucfirst(str_replace('_', ' ', $ticket['job_status']));
+                                        @endphp
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ $color }}">
+                                            {{ $label }}
                                         </span>
                                     @else
                                         <span class="text-sm text-slate-400">-</span>
