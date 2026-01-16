@@ -86,30 +86,33 @@
     window.loadRecommendationsManually = function(ticketId) {
         if (!ticketId) return;
         
-            } else if (data.recommendations && data.recommendations.length > 0) {
-                
-                data.recommendations.forEach((rec, index) => {
-                    console.log(`Recommendation ${index + 1}:`, {
-                        id: rec.id,
-                        name: rec.name,
-                        skill_score: rec.skill_match_score,
-                        combined_score: rec.combined_score
-                    });
-                });
+        const url = `/admin/triage/${ticketId}/recommendations`;
+        const loadingContainer = document.querySelector('[x-show="loadingRecommendations"]');
+        const noRecommendationsContainer = document.getElementById('no-recommendations-message');
+        
+        if (loadingContainer) loadingContainer.style.display = 'block';
+        if (noRecommendationsContainer) noRecommendationsContainer.style.display = 'none';
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (loadingContainer) loadingContainer.style.display = 'none';
+            if (window.renderRecommendationsManually) {
+                window.renderRecommendationsManually(data.recommendations || []);
             }
         })
         .catch(error => {
-            
-            
-            if (alpineComponent && alpineComponent.$data) {
-                alpineComponent.$data.loadingRecommendations = false;
-                alpineComponent.$data.recommendations = [];
-            }
-            loadingRecommendationsForTicket = null;
-            
-            if (typeof alert !== 'undefined') {
-                alert('Failed to load technician recommendations. Please try again.');
-            }
+            if (loadingContainer) loadingContainer.style.display = 'none';
+            if (noRecommendationsContainer) noRecommendationsContainer.style.display = 'block';
+            showToast('Failed to load recommendations', 'error');
         });
     };
     
