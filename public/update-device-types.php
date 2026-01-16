@@ -20,16 +20,24 @@ echo "<p>This script will update devices with device_type_id based on their devi
 echo "<hr>";
 
 try {
-    // Get all device types
-    $deviceTypes = \App\Models\DeviceType::all()->keyBy(function($type) {
+    // Get all device types - index by both name and slug for flexible matching
+    $deviceTypesByName = \App\Models\DeviceType::all()->keyBy(function($type) {
         return strtolower($type->name);
     });
     
+    $deviceTypesBySlug = \App\Models\DeviceType::all()->keyBy(function($type) {
+        return strtolower($type->slug);
+    });
+    
+    // Combined lookup - check both name and slug
+    $deviceTypes = collect($deviceTypesByName)->merge($deviceTypesBySlug);
+    
     // Common device type mappings (handle variations)
     $deviceTypeMappings = [
-        'phone' => 'phone',
+        'phone' => 'phone',  // Maps to slug 'phone' (which is "Mobile Phone")
         'mobile' => 'phone',
         'smartphone' => 'phone',
+        'mobile phone' => 'phone',
         'laptop' => 'laptop',
         'notebook' => 'laptop',
         'desktop' => 'desktop',
@@ -46,8 +54,8 @@ try {
     
     echo "<h2>Available Device Types</h2>";
     echo "<ul>";
-    foreach ($deviceTypes as $name => $type) {
-        echo "<li><strong>{$name}</strong> → ID: {$type->id}</li>";
+    foreach ($deviceTypesByName as $name => $type) {
+        echo "<li><strong>{$name}</strong> (slug: {$type->slug}) → ID: {$type->id}</li>";
     }
     echo "</ul>";
     echo "<hr>";
@@ -67,7 +75,10 @@ try {
     foreach ($devicesToCheck as $deviceTypeString) {
         $normalizedType = $deviceTypeMappings[$deviceTypeString] ?? $deviceTypeString;
         
-        if (!$deviceTypes->has($normalizedType)) {
+        // Check if exists by slug or name
+        $exists = $deviceTypesBySlug->has($normalizedType) || $deviceTypesByName->has($normalizedType);
+        
+        if (!$exists) {
             $missingTypes[] = $normalizedType;
         }
     }
@@ -115,13 +126,27 @@ try {
         
         foreach ($devicesToUpdate as $device) {
             $deviceTypeString = strtolower(trim($device->device_type ?? ''));
-            // Try direct match first
-            $deviceType = $deviceTypes->get($deviceTypeString);
+            $deviceType = null;
             
+            // Try direct match by slug first (most reliable)
+            if ($deviceTypesBySlug->has($deviceTypeString)) {
+                $deviceType = $deviceTypesBySlug->get($deviceTypeString);
+            }
+            // Try direct match by name
+            elseif ($deviceTypesByName->has($deviceTypeString)) {
+                $deviceType = $deviceTypesByName->get($deviceTypeString);
+            }
             // If no direct match, try mapping
-            if (!$deviceType) {
+            else {
                 $normalizedType = $deviceTypeMappings[$deviceTypeString] ?? $deviceTypeString;
-                $deviceType = $deviceTypes->get($normalizedType);
+                // Try by slug first
+                if ($deviceTypesBySlug->has($normalizedType)) {
+                    $deviceType = $deviceTypesBySlug->get($normalizedType);
+                }
+                // Then try by name
+                elseif ($deviceTypesByName->has($normalizedType)) {
+                    $deviceType = $deviceTypesByName->get($normalizedType);
+                }
             }
             
             if ($deviceType) {
