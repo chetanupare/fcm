@@ -68,6 +68,18 @@
             if (typeof window.updateAssignForm === 'function') {
                 window.updateAssignForm(ticketId);
             }
+            
+            // Also ensure recommendations are loaded after modal is visible
+            setTimeout(() => {
+                const element = document.querySelector('[x-data]');
+                if (element && element.__x) {
+                    const alpineComponent = element.__x;
+                    console.log('Modal visible, ensuring recommendations are loaded...');
+                    if (typeof window.loadRecommendations === 'function') {
+                        window.loadRecommendations(ticketId, alpineComponent);
+                    }
+                }
+            }, 300);
         }, 100);
     };
     
