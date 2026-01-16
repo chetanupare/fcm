@@ -174,6 +174,18 @@
                             </select>
                         </div>
                     </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Experience (Years)</label>
+                        <input type="number" 
+                               name="experience_years" 
+                               id="experience-years-input"
+                               min="0" 
+                               max="50" 
+                               value="0"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                               placeholder="Enter years of experience">
+                        <p class="text-xs text-slate-500 mt-1">Number of years of experience with this device type</p>
+                    </div>
                     <div class="flex gap-2 justify-end">
                         <button type="button" onclick="hideAddSkillForm()" 
                                 class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium">
@@ -182,7 +194,7 @@
                         <button type="submit" 
                                 id="add-skill-submit-btn"
                                 disabled
-                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600">
                             <span class="flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -289,11 +301,26 @@
     }
     
     function hideAddSkillForm() {
-        document.getElementById('add-skill-form').classList.add('hidden');
+        const formElement = document.getElementById('add-skill-form');
+        if (formElement) {
+            formElement.classList.add('hidden');
+        }
         // Reset form
         const form = document.getElementById('add-skill-form-element');
         if (form) {
             form.reset();
+            // Reset complexity to default
+            const complexitySelect = document.getElementById('complexity-level-select');
+            if (complexitySelect) {
+                complexitySelect.value = 'basic';
+            }
+            // Reset experience to 0
+            const experienceInput = document.getElementById('experience-years-input');
+            if (experienceInput) {
+                experienceInput.value = '0';
+            }
+            // Update button state
+            updateAddButtonState();
         }
     }
     
@@ -307,7 +334,16 @@
             const complexitySelected = complexitySelect.value && complexitySelect.value !== '';
             
             // Enable button only if both fields are selected
-            submitBtn.disabled = !(deviceSelected && complexitySelected);
+            const shouldEnable = deviceSelected && complexitySelected;
+            submitBtn.disabled = !shouldEnable;
+            
+            // Update visual state - remove disabled classes when enabled
+            if (shouldEnable) {
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            } else {
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
         }
     }
     
@@ -361,10 +397,17 @@
         .then(data => {
             if (data.message) {
                 alert(data.message);
+                // Get technician name before reloading
+                const technicianNameEl = document.getElementById('modal-technician-name');
+                const technicianName = technicianNameEl ? technicianNameEl.textContent : '';
+                
                 // Reload the modal content
-                openSkillModal(technicianId, document.getElementById('modal-technician-name').textContent);
-                // Hide the form
-                hideAddSkillForm();
+                if (technicianName) {
+                    openSkillModal(technicianId, technicianName);
+                } else {
+                    // Fallback: reload the page or refresh modal
+                    location.reload();
+                }
             }
         })
         .catch(error => {
