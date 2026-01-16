@@ -103,8 +103,25 @@ class TriageController extends Controller
             \Log::info('Recommendations query', [
                 'ticket_id' => $ticketId,
                 'device_type_id' => $ticket->device->device_type_id ?? null,
+                'device_type_name' => $ticket->device->deviceType->name ?? null,
                 'technicians_found' => $technicians->count(),
                 'technician_ids' => $technicians->pluck('id')->toArray(),
+                'technician_details' => $technicians->map(function($tech) {
+                    return [
+                        'id' => $tech->id,
+                        'name' => $tech->user->name ?? 'Unknown',
+                        'status' => $tech->status,
+                        'active_jobs_count' => $tech->active_jobs_count,
+                        'skills_count' => $tech->skills->count(),
+                        'skills' => $tech->skills->map(function($skill) {
+                            return [
+                                'device_type_id' => $skill->device_type_id,
+                                'device_type_name' => $skill->deviceType->name ?? null,
+                                'is_active' => $skill->is_active,
+                            ];
+                        })->toArray(),
+                    ];
+                })->toArray(),
             ]);
 
             if ($technicians->isEmpty()) {
@@ -121,6 +138,22 @@ class TriageController extends Controller
                 try {
                     // Calculate skill match score
                     $skillScore = $skillMatchingService->calculateMatchScore($technician, $ticket);
+                    
+                    // Debug logging for each technician
+                    $deviceTypeId = $ticket->device->device_type_id ?? null;
+                    $technicianSkill = $deviceTypeId ? $technician->getSkillForDeviceType($deviceTypeId) : null;
+                    
+                    \Log::info('Technician recommendation calculation', [
+                        'technician_id' => $technician->id,
+                        'technician_name' => $technician->user->name ?? 'Unknown',
+                        'ticket_id' => $ticket->id,
+                        'device_type_id' => $deviceTypeId,
+                        'has_skill' => $technicianSkill ? true : false,
+                        'skill_id' => $technicianSkill->id ?? null,
+                        'skill_complexity' => $technicianSkill->complexity_level ?? null,
+                        'skill_is_active' => $technicianSkill->is_active ?? null,
+                        'skill_match_score' => $skillScore,
+                    ]);
                     
                     // Calculate distance
                     $distanceData = null;
@@ -170,10 +203,29 @@ class TriageController extends Controller
             })->filter(function($rec) {
                 return $rec !== null;
             })->sortByDesc('combined_score')->take(5)->values();
+            
+            // Log final recommendations
+            \Log::info('Final recommendations', [
+                'ticket_id' => $ticketId,
+                'recommendations_count' => $recommendations->count(),
+                'recommendations' => $recommendations->map(function($rec) {
+                    return [
+                        'id' => $rec['id'],
+                        'name' => $rec['name'],
+                        'skill_match_score' => $rec['skill_match_score'],
+                        'combined_score' => $rec['combined_score'],
+                    ];
+                })->toArray(),
+            ]);
 
             return response()->json([
                 'recommendations' => $recommendations,
                 'count' => $recommendations->count(),
+                'debug' => [
+                    'ticket_device_type_id' => $ticket->device->device_type_id ?? null,
+                    'ticket_device_type_name' => $ticket->device->deviceType->name ?? null,
+                    'technicians_checked' => $technicians->count(),
+                ],
             ]);
         } catch (\Exception $e) {
             \Log::error('Error getting recommended technicians', [

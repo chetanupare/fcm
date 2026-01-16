@@ -107,9 +107,30 @@ class Technician extends Model
 
     public function getSkillForDeviceType(int $deviceTypeId): ?TechnicianSkill
     {
-        return $this->skills()
+        // Use skills() relationship which filters by is_active=true
+        // But also check allSkills() as fallback to see if skill exists but is inactive
+        $skill = $this->skills()
             ->where('device_type_id', $deviceTypeId)
             ->orderBy('complexity_level', 'desc')
             ->first();
+            
+        // If no active skill found, check if there's an inactive one (for debugging)
+        if (!$skill) {
+            $inactiveSkill = $this->allSkills()
+                ->where('device_type_id', $deviceTypeId)
+                ->where('is_active', false)
+                ->first();
+                
+            if ($inactiveSkill) {
+                \Log::warning('Technician has inactive skill for device type', [
+                    'technician_id' => $this->id,
+                    'device_type_id' => $deviceTypeId,
+                    'skill_id' => $inactiveSkill->id,
+                    'is_active' => $inactiveSkill->is_active,
+                ]);
+            }
+        }
+        
+        return $skill;
     }
 }
