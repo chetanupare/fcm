@@ -110,9 +110,9 @@
 
                         <!-- Actions -->
                         <div class="col-span-2 flex items-center justify-end gap-2">
-                            <button @click="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}" 
+                            <button type="button"
+                                    @click.stop="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}; console.log('Modal opening for ticket {{ $ticket['id'] }}'); window.currentTicketId = {{ $ticket['id'] }}; if (typeof updateAssignForm === 'function') { updateAssignForm({{ $ticket['id'] }}); }"
                                     data-ticket-id="{{ $ticket['id'] }}"
-                                    onclick="console.log('Assign button clicked for ticket {{ $ticket['id'] }}'); window.currentTicketId = {{ $ticket['id'] }}; if (typeof updateAssignForm === 'function') { updateAssignForm({{ $ticket['id'] }}); }"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm hover:shadow-md">
                                 Assign
                             </button>
