@@ -157,9 +157,33 @@ class JobController extends Controller
             ->with(['ticket.device', 'ticket.customer', 'quote', 'checklists.checklist'])
             ->findOrFail($id);
 
-        return response()->json([
-            'job' => $job,
-        ]);
+        $response = ['job' => $job];
+
+        // Add ETA if job is en_route
+        if ($job->status === 'en_route' && $job->technician) {
+            $etaService = app(\App\Services\Location\EtaCalculationService::class);
+            $eta = $etaService->calculateEta($job->technician, $job);
+            if ($eta) {
+                $response['eta'] = $eta;
+            } else {
+                $response['eta'] = null;
+            }
+            
+            // Add technician and customer locations for map
+            $response['locations'] = [
+                'technician' => [
+                    'latitude' => $job->technician->latitude,
+                    'longitude' => $job->technician->longitude,
+                ],
+                'customer' => [
+                    'latitude' => $job->ticket->latitude,
+                    'longitude' => $job->ticket->longitude,
+                    'address' => $job->ticket->address,
+                ],
+            ];
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -524,6 +548,66 @@ class JobController extends Controller
         $job->update(['status' => 'completed']);
         $releaseService = app(\App\Services\Workflow\ReleaseService::class);
         $releaseService->releaseTechnician($job);
+    }
+
+    public function updateEta(Request $request, int $id)
+    {
+        $request->validate([
+            'eta_minutes' => 'required|integer|min:1|max:1440', // 1 minute to 24 hours
+        ]);
+
+        $job = Job::where('technician_id', $request->user()->technician->id)
+            ->findOrFail($id);
+
+        if ($job->status !== 'en_route') {
+            return response()->json([
+                'message' => 'ETA can only be updated when job status is en_route',
+            ], 422);
+        }
+
+        // Update estimated duration
+        $job->update([
+            'estimated_duration_minutes' => $request->eta_minutes,
+        ]);
+
+        // Calculate arrival time
+        $arrivalTime = now()->addMinutes($request->eta_minutes);
+        $windowMinutes = max(5, round($request->eta_minutes * 0.1));
+        $arrivalWindowStart = $arrivalTime->copy()->subMinutes($windowMinutes);
+        $arrivalWindowEnd = $arrivalTime->copy()->addMinutes($windowMinutes);
+
+        $eta = [
+            'eta_minutes' => $request->eta_minutes,
+            'eta_text' => $request->eta_minutes . ' mins',
+            'arrival_time' => $arrivalTime->toIso8601String(),
+            'arrival_window_start' => $arrivalWindowStart->toIso8601String(),
+            'arrival_window_end' => $arrivalWindowEnd->toIso8601String(),
+            'arrival_window_text' => $arrivalWindowStart->format('g:i A') . ' - ' . $arrivalWindowEnd->format('g:i A'),
+            'is_manual' => true,
+        ];
+
+        // Notify customer about updated ETA
+        $customer = $job->ticket->customer;
+        if ($customer) {
+            $notificationService = app(\App\Services\Notification\MultiChannelNotificationService::class);
+            $notificationService->send(
+                $customer,
+                'eta_updated',
+                'Updated ETA',
+                "Your technician's estimated arrival time has been updated: {$eta['eta_text']} (Arrival window: {$eta['arrival_window_text']})",
+                [
+                    'job_id' => $job->id,
+                    'ticket_id' => $job->ticket_id,
+                    'eta_text' => $eta['eta_text'],
+                    'arrival_window' => $eta['arrival_window_text'],
+                ]
+            );
+        }
+
+        return response()->json([
+            'message' => 'ETA updated successfully',
+            'eta' => $eta,
+        ]);
     }
 
     protected function schedulePaymentReminders(Job $job): void

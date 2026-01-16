@@ -94,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/jobs/{id}/generate-quote', [TechnicianJobController::class, 'generateQuote']);
         Route::post('/jobs/{id}/sign-contract', [TechnicianJobController::class, 'signContract']);
         Route::put('/jobs/{id}/status', [TechnicianJobController::class, 'updateStatus']);
+        Route::put('/jobs/{id}/eta', [TechnicianJobController::class, 'updateEta']);
         Route::post('/jobs/{id}/after-photo', [TechnicianJobController::class, 'uploadAfterPhoto']);
         Route::post('/jobs/{id}/payment/initiate', [PaymentController::class, 'initiatePayment']);
         Route::post('/jobs/{id}/payment', [TechnicianJobController::class, 'recordPayment']);
