@@ -155,12 +155,23 @@
         
         const checkAlpine = () => {
             retryCount++;
-            console.log(`checkAlpine attempt ${retryCount}/${maxRetries}`);
+            console.log(`=== checkAlpine attempt ${retryCount}/${maxRetries} ===`);
             
-            const element = document.querySelector('[x-data]');
+            // Try multiple selectors to find Alpine component
+            const element = document.querySelector('[x-data]') || 
+                           document.querySelector('.space-y-6[x-data]') ||
+                           document.querySelector('div[x-data]');
             console.log('Element found:', element ? 'Yes' : 'No');
+            if (element) {
+                console.log('Element tag:', element.tagName);
+                console.log('Element classes:', element.className);
+                console.log('Element has x-data:', element.hasAttribute('x-data'));
+            }
             console.log('Element __x:', element && element.__x ? 'Yes' : 'No');
             console.log('Alpine defined:', typeof Alpine !== 'undefined' ? 'Yes' : 'No');
+            if (typeof Alpine !== 'undefined') {
+                console.log('Alpine version:', Alpine.version || 'unknown');
+            }
             
             if (element && element.__x) {
                 const alpineComponent = element.__x;
