@@ -236,16 +236,14 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-2">Device Type <span class="text-red-500">*</span></label>
                             <select name="device_type_id" id="device-type-select" required 
-                                    class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    onchange="updateAddButtonState()">
+                                    class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                 <option value="">Select device type...</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-2">Complexity Level <span class="text-red-500">*</span></label>
                             <select name="complexity_level" id="complexity-level-select" required 
-                                    class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    onchange="updateAddButtonState()">
+                                    class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                 <option value="">Select level...</option>
                                 <option value="basic" selected>Basic</option>
                                 <option value="intermediate">Intermediate</option>
@@ -386,19 +384,22 @@
             // Complexity is already "basic", so button will enable when device type is selected
             setTimeout(() => {
                 updateAddButtonState();
+                
+                // Attach event listeners after DOM is ready
+                const deviceSelectEl = document.getElementById('device-type-select');
+                const complexitySelectEl = document.getElementById('complexity-level-select');
+                
+                if (deviceSelectEl) {
+                    deviceSelectEl.addEventListener('change', updateAddButtonState);
+                }
+                if (complexitySelectEl) {
+                    complexitySelectEl.addEventListener('change', updateAddButtonState);
+                }
             }, 100);
         }).catch(error => {
             console.error('Error loading device types:', error);
             showToast('Error loading device types', 'error');
         });
-        
-        // Update button state when device type changes
-        if (deviceSelect) {
-            // Remove any existing listeners to avoid duplicates
-            const newSelect = deviceSelect.cloneNode(true);
-            deviceSelect.parentNode.replaceChild(newSelect, deviceSelect);
-            document.getElementById('device-type-select').addEventListener('change', updateAddButtonState);
-        }
     }
     
     function hideAddSkillForm() {
