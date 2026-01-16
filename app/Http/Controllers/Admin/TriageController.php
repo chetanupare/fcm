@@ -89,6 +89,8 @@ class TriageController extends Controller
             $ticket = Ticket::with('device.deviceType')->findOrFail($ticketId);
             
             // Get available technicians (on duty and not busy)
+            // Note: Technicians must have status='on_duty' to appear in recommendations
+            // If skilled technicians aren't showing, ensure their status is set to 'on_duty'
             $technicians = Technician::where('status', 'on_duty')
                 ->where(function($query) {
                     $query->where('active_jobs_count', 0)
@@ -96,6 +98,14 @@ class TriageController extends Controller
                 })
                 ->with(['user', 'skills.deviceType'])
                 ->get();
+            
+            // Log for debugging
+            \Log::info('Recommendations query', [
+                'ticket_id' => $ticketId,
+                'device_type_id' => $ticket->device->device_type_id ?? null,
+                'technicians_found' => $technicians->count(),
+                'technician_ids' => $technicians->pluck('id')->toArray(),
+            ]);
 
             if ($technicians->isEmpty()) {
                 return response()->json([
