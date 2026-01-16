@@ -10,27 +10,20 @@ return new class extends Migration
     {
         // Only add foreign key if suppliers table exists
         if (Schema::hasTable('suppliers') && Schema::hasColumn('components', 'supplier_id')) {
-            Schema::table('components', function (Blueprint $table) {
-                // Check if foreign key doesn't already exist
-                $foreignKeys = Schema::getConnection()
-                    ->getDoctrineSchemaManager()
-                    ->listTableForeignKeys('components');
-                
-                $hasForeignKey = false;
-                foreach ($foreignKeys as $foreignKey) {
-                    if ($foreignKey->getColumns() == ['supplier_id']) {
-                        $hasForeignKey = true;
-                        break;
-                    }
-                }
-                
-                if (!$hasForeignKey) {
+            try {
+                Schema::table('components', function (Blueprint $table) {
                     $table->foreign('supplier_id')
                         ->references('id')
                         ->on('suppliers')
                         ->onDelete('set null');
+                });
+            } catch (\Exception $e) {
+                // Foreign key might already exist, ignore
+                if (strpos($e->getMessage(), 'Duplicate key name') === false && 
+                    strpos($e->getMessage(), 'already exists') === false) {
+                    throw $e;
                 }
-            });
+            }
         }
     }
 

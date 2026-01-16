@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('technician_performance', function (Blueprint $table) {
+        if (!Schema::hasTable('technician_performance')) {
+            Schema::create('technician_performance', function (Blueprint $table) {
             $table->id();
             $table->foreignId('technician_id')->constrained('technicians')->onDelete('cascade');
             $table->date('period_start'); // Monthly/Weekly period
@@ -31,6 +32,7 @@ return new class extends Migration
             $table->index('technician_id');
             $table->index('period_start');
         });
+        }
     }
 
     public function down(): void

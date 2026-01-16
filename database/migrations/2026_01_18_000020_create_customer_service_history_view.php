@@ -60,6 +60,7 @@ return new class extends Migration
                     tech.user_id as technician_user_id,
                     q.total_amount as quote_amount,
                     NULL as invoice_amount,
+                    NULL as quote_tax,
                     p.amount as payment_amount,
                     p.status as payment_status,
                     r.rating,

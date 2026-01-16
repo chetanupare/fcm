@@ -10,27 +10,20 @@ return new class extends Migration
     {
         // Add foreign key constraint after invoices table is created
         if (Schema::hasTable('invoices') && Schema::hasTable('digital_signatures') && Schema::hasColumn('digital_signatures', 'invoice_id')) {
-            Schema::table('digital_signatures', function (Blueprint $table) {
-                // Check if foreign key doesn't already exist
-                $foreignKeys = Schema::getConnection()
-                    ->getDoctrineSchemaManager()
-                    ->listTableForeignKeys('digital_signatures');
-                
-                $hasForeignKey = false;
-                foreach ($foreignKeys as $foreignKey) {
-                    if ($foreignKey->getColumns() == ['invoice_id']) {
-                        $hasForeignKey = true;
-                        break;
-                    }
-                }
-                
-                if (!$hasForeignKey) {
+            try {
+                Schema::table('digital_signatures', function (Blueprint $table) {
                     $table->foreign('invoice_id')
                         ->references('id')
                         ->on('invoices')
                         ->onDelete('set null');
+                });
+            } catch (\Exception $e) {
+                // Foreign key might already exist, ignore
+                if (strpos($e->getMessage(), 'Duplicate key name') === false && 
+                    strpos($e->getMessage(), 'already exists') === false) {
+                    throw $e;
                 }
-            });
+            }
         }
     }
 
