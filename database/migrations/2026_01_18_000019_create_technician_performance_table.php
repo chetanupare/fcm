@@ -27,7 +27,7 @@ return new class extends Migration
             $table->json('metrics')->nullable(); // Additional custom metrics
             $table->timestamps();
             
-            $table->unique(['technician_id', 'period_start', 'period_end']);
+            $table->unique(['technician_id', 'period_start', 'period_end'], 'tech_perf_unique');
             $table->index('technician_id');
             $table->index('period_start');
         });

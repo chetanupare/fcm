@@ -43,8 +43,9 @@ try {
         
         // Phase 2: Enhanced Features
         '2026_01_18_000013_create_data_recovery_jobs_table',
+        '2026_01_18_000015_create_suppliers_table', // Create suppliers BEFORE enhancing components
         '2026_01_18_000014_enhance_components_table_for_inventory',
-        '2026_01_18_000015_create_suppliers_table',
+        '2026_01_18_000023_add_supplier_foreign_key_to_components', // Add FK after suppliers exists
         '2026_01_18_000016_create_purchase_orders_table',
         '2026_01_18_000017_create_locations_table',
         '2026_01_18_000018_add_location_support_to_tables',
@@ -52,6 +53,8 @@ try {
         '2026_01_18_000020_create_customer_service_history_view',
         '2026_01_18_000021_create_integrations_table',
         '2026_01_18_000022_create_branding_settings_table',
+        '2026_01_18_000024_update_customer_service_history_view_with_invoices', // Update view after invoices
+        '2026_01_18_000025_add_invoice_foreign_key_to_digital_signatures', // Add FK after invoices
     ];
 
     echo "<h2>Running Migrations</h2>";
