@@ -769,12 +769,8 @@
             const element = document.querySelector('[x-data]');
             if (element && typeof Alpine !== 'undefined' && element.__x) {
                 
-                if (typeof window.loadRecommendations === 'function') {
-                    window.loadRecommendations(ticketId, element.__x);
-                } else if (typeof loadRecommendations === 'function') {
-                    loadRecommendations(ticketId, element.__x);
-                } else {
-                    
+                if (window.loadRecommendationsManually) {
+                    window.loadRecommendationsManually(ticketId);
                 }
             } else {
                 // Retry once after a delay
