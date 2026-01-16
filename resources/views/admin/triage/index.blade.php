@@ -1177,4 +1177,3 @@
                 }
             }
         });
-                    submitBtn.disabled = false;
