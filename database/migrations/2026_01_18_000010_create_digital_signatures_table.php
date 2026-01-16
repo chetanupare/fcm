@@ -13,7 +13,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('job_id')->nullable()->constrained('service_jobs')->onDelete('set null');
             $table->foreignId('quote_id')->nullable()->constrained('quotes')->onDelete('set null');
-            $table->foreignId('invoice_id')->nullable()->constrained('invoices')->onDelete('set null');
+            // invoice_id will be added after invoices table is created (migration 000025)
+            $table->unsignedBigInteger('invoice_id')->nullable();
             $table->string('document_type'); // quote, invoice, contract, work_order, amc, other
             $table->string('signature_image'); // Path to stored image
             $table->string('signature_hash'); // SHA256 hash for verification
