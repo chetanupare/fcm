@@ -114,12 +114,14 @@
         content.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p class="mt-2 text-slate-500">Loading...</p></div>';
         modal.classList.remove('hidden');
         
-        // Load skills via API
-        fetch(`/api/admin/technicians/${technicianId}/skills`, {
+        // Load skills via web route (uses session auth)
+        fetch(`/admin/technicians/${technicianId}/skills`, {
             headers: {
                 'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {
@@ -220,11 +222,13 @@
     }
     
     function loadDeviceTypes() {
-        fetch('/api/admin/technician-skills/device-types', {
+        fetch('/admin/technician-skills/device-types', {
             headers: {
                 'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {
@@ -253,13 +257,14 @@
         const form = event.target;
         const formData = new FormData(form);
         
-        fetch(`/api/admin/technicians/${technicianId}/skills`, {
+        fetch(`/admin/technicians/${technicianId}/skills`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'X-Requested-With': 'XMLHttpRequest'
             },
+            credentials: 'same-origin',
             body: formData
         })
         .then(response => response.json())
@@ -278,13 +283,14 @@
     function deleteSkill(technicianId, skillId) {
         if (!confirm('Are you sure you want to remove this skill?')) return;
         
-        fetch(`/api/admin/technicians/${technicianId}/skills/${skillId}`, {
+        fetch(`/admin/technicians/${technicianId}/skills/${skillId}`, {
             method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'X-Requested-With': 'XMLHttpRequest'
-            }
+            },
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {

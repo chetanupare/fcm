@@ -50,6 +50,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/technicians/skills', [TechnicianController::class, 'skills'])->name('technicians.skills');
     Route::get('/technicians/{id}/revenue', [TechnicianController::class, 'revenue'])->name('technicians.revenue');
     
+    // Technician Skills Management (Web routes for Blade views)
+    Route::get('/technicians/{technicianId}/skills', [\App\Http\Controllers\Admin\TechnicianSkillController::class, 'index'])->name('technicians.skills.index');
+    Route::post('/technicians/{technicianId}/skills', [\App\Http\Controllers\Admin\TechnicianSkillController::class, 'store'])->name('technicians.skills.store');
+    Route::put('/technicians/{technicianId}/skills/{skillId}', [\App\Http\Controllers\Admin\TechnicianSkillController::class, 'update'])->name('technicians.skills.update');
+    Route::delete('/technicians/{technicianId}/skills/{skillId}', [\App\Http\Controllers\Admin\TechnicianSkillController::class, 'destroy'])->name('technicians.skills.destroy');
+    Route::get('/technician-skills/device-types', [\App\Http\Controllers\Admin\TechnicianSkillController::class, 'availableDeviceTypes'])->name('technicians.skills.device-types');
+    
     // Customers Management
     Route::resource('customers', CustomerController::class);
     
