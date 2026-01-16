@@ -138,7 +138,7 @@
      @click.away="assignModalOpen = false"
      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
      style="display: none;">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all ticket-enter">
+    <div @click.stop class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all ticket-enter">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl font-bold text-slate-800">Assign Technician</h3>
             <button @click="assignModalOpen = false" class="text-slate-400 hover:text-slate-600">
