@@ -38,6 +38,24 @@ class BookingController extends Controller
             ], 422);
         }
 
+        // Map device_type string to device_type_id if needed
+        $deviceTypeId = null;
+        if ($request->device_type) {
+            // Try to find DeviceType by name (case-insensitive)
+            $deviceType = \App\Models\DeviceType::whereRaw('LOWER(name) = ?', [strtolower($request->device_type)])
+                ->orWhere('name', $request->device_type)
+                ->first();
+            
+            if ($deviceType) {
+                $deviceTypeId = $deviceType->id;
+            } else {
+                // If device_type_id is provided directly, use it
+                $deviceTypeId = $request->device_type_id ?? null;
+            }
+        } else {
+            $deviceTypeId = $request->device_type_id ?? null;
+        }
+
         // Find or create device
         $device = Device::firstOrCreate(
             [
@@ -49,8 +67,14 @@ class BookingController extends Controller
             [
                 'model' => $request->model,
                 'purchase_date' => $request->purchase_date,
+                'device_type_id' => $deviceTypeId, // Set device_type_id for skill matching
             ]
         );
+        
+        // Update device_type_id if it wasn't set or if it changed
+        if ($deviceTypeId && $device->device_type_id !== $deviceTypeId) {
+            $device->update(['device_type_id' => $deviceTypeId]);
+        }
 
         // Handle photo uploads with quality setting
         $photos = [];
