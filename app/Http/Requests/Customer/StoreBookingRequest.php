@@ -21,6 +21,8 @@ class StoreBookingRequest extends FormRequest
             'serial_number' => 'nullable|string|max:255',
             'issue_description' => 'required|string|min:10',
             'address' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'preferred_date' => 'nullable|date|after_or_equal:today',
             'preferred_time' => 'nullable|string',
             'photos' => 'nullable|array',

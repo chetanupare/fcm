@@ -86,6 +86,7 @@ set_time_limit(300); // 5 minutes
             'device_types', // NEW: Device types table
             'device_brands', // NEW: Device brands table
             'device_models', // NEW: Device models table
+            // Note: latitude and longitude columns are added to tickets table
             'cache',
             'cache_locks',
             'sessions',

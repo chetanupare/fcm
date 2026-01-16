@@ -18,6 +18,8 @@ class TriageService
             'device_id' => $data['device_id'],
             'issue_description' => $data['issue_description'],
             'address' => $data['address'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'preferred_date' => $data['preferred_date'] ?? null,
             'preferred_time' => $data['preferred_time'] ?? null,
             'photos' => $data['photos'] ?? [],

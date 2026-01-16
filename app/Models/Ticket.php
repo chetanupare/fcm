@@ -17,6 +17,8 @@ class Ticket extends Model
         'device_id',
         'issue_description',
         'address',
+        'latitude',
+        'longitude',
         'preferred_date',
         'preferred_time',
         'photos',
@@ -31,6 +33,8 @@ class Ticket extends Model
     {
         return [
             'photos' => 'array',
+            'latitude' => 'decimal:8',
+            'longitude' => 'decimal:8',
             'preferred_date' => 'date',
             'preferred_time' => 'datetime',
             'triage_deadline_at' => 'datetime',

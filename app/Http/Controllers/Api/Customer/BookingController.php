@@ -82,6 +82,8 @@ class BookingController extends Controller
             'device_id' => $device->id,
             'issue_description' => $request->issue_description,
             'address' => $request->address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
             'preferred_date' => $request->preferred_date,
             'preferred_time' => $request->preferred_time,
             'photos' => $photos,
