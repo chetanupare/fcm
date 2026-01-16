@@ -89,7 +89,7 @@
                         <div class="col-span-2 flex items-center justify-end gap-2">
                             <button @click="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}" 
                                     data-ticket-id="{{ $ticket['id'] }}"
-                                    onclick="console.log('Assign button clicked for ticket {{ $ticket['id'] }}'); window.currentTicketId = {{ $ticket['id'] }}; updateAssignForm({{ $ticket['id'] }});"
+                                    onclick="console.log('Assign button clicked for ticket {{ $ticket['id'] }}'); window.currentTicketId = {{ $ticket['id'] }}; if (typeof updateAssignForm === 'function') { updateAssignForm({{ $ticket['id'] }}); }"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm hover:shadow-md">
                                 Assign
                             </button>
@@ -224,7 +224,7 @@
     }, 60000); // Changed to 60 seconds since we have real-time countdown
 
     // Function to update form when ticket is selected
-    function updateAssignForm(ticketId) {
+    window.updateAssignForm = function(ticketId) {
         console.log('Updating form for ticket:', ticketId);
         const form = document.getElementById('assign-form');
         const ticketInput = document.getElementById('ticket-id-input');
@@ -232,8 +232,10 @@
             form.action = `/admin/triage/${ticketId}/assign`;
             ticketInput.value = ticketId;
             console.log('Form updated:', form.action, ticketInput.value);
+        } else {
+            console.error('Form elements not found');
         }
-    }
+    };
 
     // Handle form submission with fetch for better UX
     document.addEventListener('DOMContentLoaded', function() {
