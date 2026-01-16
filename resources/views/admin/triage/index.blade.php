@@ -153,8 +153,7 @@
                         class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium">
                     Cancel
                 </button>
-                <button type="submit" id="assign-submit-btn"
-                        onclick="console.log('Submit button clicked'); event.preventDefault(); handleAssignSubmit(event); return false;"
+                <button type="button" id="assign-submit-btn"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
                 </button>
