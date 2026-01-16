@@ -4,8 +4,8 @@
 @section('page-title', 'Technician Skills Management')
 
 @section('content')
-<!-- Toast Notification Container -->
-<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+<!-- Toast Notification Container - Higher z-index than modal -->
+<div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-2"></div>
 
 <div class="space-y-6">
     <!-- Header -->
@@ -472,6 +472,7 @@
         // Validate form
         const deviceTypeId = formData.get('device_type_id');
         const complexityLevel = formData.get('complexity_level');
+        const experienceYears = formData.get('experience_years');
         
         if (!deviceTypeId || !complexityLevel) {
             showToast('Please fill in all required fields', 'warning');
@@ -480,6 +481,18 @@
                 submitBtn.innerHTML = originalText;
             }
             return;
+        }
+        
+        // Convert experience_years to integer if provided
+        if (experienceYears !== null && experienceYears !== '') {
+            const experienceInt = parseInt(experienceYears, 10);
+            if (!isNaN(experienceInt)) {
+                formData.set('experience_years', experienceInt);
+            } else {
+                formData.set('experience_years', 0);
+            }
+        } else {
+            formData.set('experience_years', 0);
         }
         
         fetch(`/admin/technicians/${technicianId}/skills`, {

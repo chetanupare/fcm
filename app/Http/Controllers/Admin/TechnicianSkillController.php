@@ -73,7 +73,9 @@ class TechnicianSkillController extends Controller
         if ($existingSkill) {
             return response()->json([
                 'message' => 'Skill already exists for this device type',
-                'skill' => $existingSkill,
+                'skill_id' => $existingSkill->id,
+                'device_type_id' => $existingSkill->device_type_id,
+                'complexity_level' => $existingSkill->complexity_level,
             ], 422);
         }
 
