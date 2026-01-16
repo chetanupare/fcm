@@ -331,21 +331,62 @@
         console.log('DOM loaded, setting up form handler');
         console.log('Alpine.js loaded:', typeof Alpine !== 'undefined');
         
-        // Update form when modal opens (Alpine.js watch)
+        // Update form when modal opens and attach submit handler
         const observer = new MutationObserver(function(mutations) {
             const modal = document.querySelector('[x-show="assignModalOpen"]');
-            if (modal && !modal.hasAttribute('style') || modal.style.display !== 'none') {
-                const ticketId = window.currentTicketId || document.querySelector('[x-data]')?.__x?.$data?.selectedTicket;
-                if (ticketId) {
-                    updateAssignForm(ticketId);
+            if (modal) {
+                const isVisible = !modal.hasAttribute('style') || modal.style.display !== 'none';
+                if (isVisible) {
+                    const ticketId = window.currentTicketId || document.querySelector('[x-data]')?.__x?.$data?.selectedTicket;
+                    if (ticketId) {
+                        updateAssignForm(ticketId);
+                    }
+                    
+                    // Attach submit button click handler
+                    const submitBtn = document.getElementById('assign-submit-btn');
+                    if (submitBtn && !submitBtn.hasAttribute('data-handler-attached')) {
+                        submitBtn.setAttribute('data-handler-attached', 'true');
+                        submitBtn.addEventListener('click', function(e) {
+                            console.log('Submit button clicked via event listener');
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (typeof window.handleAssignSubmit === 'function') {
+                                window.handleAssignSubmit(e);
+                            } else {
+                                console.error('handleAssignSubmit function not found');
+                                alert('Error: Form handler not loaded. Please refresh the page.');
+                            }
+                        });
+                        console.log('Submit button handler attached');
+                    }
                 }
             }
         });
         
         const container = document.querySelector('[x-data]');
         if (container) {
-            observer.observe(container, { attributes: true, attributeFilter: ['style', 'class'] });
+            observer.observe(container, { attributes: true, attributeFilter: ['style', 'class'], childList: true, subtree: true });
         }
+        
+        // Also check immediately in case modal is already open
+        setTimeout(function() {
+            const submitBtn = document.getElementById('assign-submit-btn');
+            if (submitBtn && !submitBtn.hasAttribute('data-handler-attached')) {
+                submitBtn.setAttribute('data-handler-attached', 'true');
+                submitBtn.addEventListener('click', function(e) {
+                    console.log('Submit button clicked via event listener (immediate)');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof window.handleAssignSubmit === 'function') {
+                        window.handleAssignSubmit(e);
+                    } else {
+                        console.error('handleAssignSubmit function not found');
+                        alert('Error: Form handler not loaded. Please refresh the page.');
+                    }
+                });
+                console.log('Submit button handler attached (immediate)');
+            }
+        }, 1000);
         
         // Use event delegation for form submission
         document.addEventListener('submit', function(e) {
