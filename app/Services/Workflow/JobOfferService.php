@@ -17,10 +17,20 @@ class JobOfferService
         $this->notificationService = $notificationService;
     }
 
-    public function accept(Job $job): bool
+    public function accept(Job $job): array
     {
-        if (!$job->isOffered() || $job->isOfferExpired()) {
-            return false;
+        if (!$job->isOffered()) {
+            return [
+                'success' => false,
+                'message' => "Job offer is no longer available. Current status: {$job->status}",
+            ];
+        }
+
+        if ($job->isOfferExpired()) {
+            return [
+                'success' => false,
+                'message' => "Job offer has expired. The deadline was " . $job->offer_deadline_at->format('M d, Y h:i A'),
+            ];
         }
 
         $job->update([
@@ -45,7 +55,10 @@ class JobOfferService
             ));
         }
 
-        return true;
+        return [
+            'success' => true,
+            'message' => 'Job offer accepted successfully',
+        ];
     }
 
     public function reject(Job $job, ?string $reason = null): bool

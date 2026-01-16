@@ -114,11 +114,11 @@ class JobController extends Controller
         $job = Job::where('technician_id', $request->user()->technician->id)
             ->findOrFail($id);
 
-        $accepted = $this->jobOfferService->accept($job);
+        $result = $this->jobOfferService->accept($job);
 
-        if (!$accepted) {
+        if (!$result['success']) {
             return response()->json([
-                'message' => 'Cannot accept this job offer',
+                'message' => $result['message'],
             ], 422);
         }
 
@@ -252,7 +252,12 @@ class JobController extends Controller
 
         // Auto-accept job if transitioning from 'offered' to 'en_route' or 'component_pickup'
         if ($job->status === 'offered' && in_array($request->status, ['en_route', 'component_pickup'])) {
-            $this->jobOfferService->accept($job);
+            $acceptResult = $this->jobOfferService->accept($job);
+            if (!$acceptResult['success']) {
+                return response()->json([
+                    'message' => $acceptResult['message'],
+                ], 422);
+            }
             $job->refresh();
         }
 
