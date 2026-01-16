@@ -701,15 +701,41 @@
         console.log('Alpine.js loaded:', typeof Alpine !== 'undefined');
         
         // Update form when modal opens and attach submit handler
+        let observerActive = false;
+        let lastObserverCheck = 0;
         const observer = new MutationObserver(function(mutations) {
-            const modal = document.querySelector('[x-show="assignModalOpen"]');
-            if (modal) {
-                const isVisible = !modal.hasAttribute('style') || modal.style.display !== 'none';
-                if (isVisible) {
-                    const ticketId = window.currentTicketId || document.querySelector('[x-data]')?.__x?.$data?.selectedTicket;
-                    if (ticketId) {
-                        updateAssignForm(ticketId);
-                    }
+            // Throttle observer to prevent infinite loops (max once per 500ms)
+            const now = Date.now();
+            if (observerActive || (now - lastObserverCheck) < 500) {
+                return;
+            }
+            
+            observerActive = true;
+            lastObserverCheck = now;
+            
+            try {
+                const modal = document.querySelector('[x-show="assignModalOpen"]');
+                if (modal) {
+                    // Check if modal is actually visible using computed styles
+                    const computedStyle = window.getComputedStyle(modal);
+                    const isVisible = computedStyle.display !== 'none' && 
+                                     computedStyle.visibility !== 'hidden' &&
+                                     computedStyle.opacity !== '0';
+                    
+                    if (isVisible) {
+                        // Get ticket ID from Alpine or window
+                        let ticketId = window.currentTicketId;
+                        if (!ticketId) {
+                            const alpineElement = document.querySelector('[x-data]');
+                            if (alpineElement && alpineElement.__x) {
+                                ticketId = alpineElement.__x.$data?.selectedTicket;
+                            }
+                        }
+                        
+                        // Only update if ticket ID changed
+                        if (ticketId && ticketId !== lastUpdatedTicketId) {
+                            updateAssignForm(ticketId);
+                        }
                     
                     // Attach submit button click handler
                     const submitBtn = document.getElementById('assign-submit-btn');
@@ -729,6 +755,11 @@
                         console.log('Submit button handler attached');
                     }
                 }
+            }
+            } catch (error) {
+                console.error('Error in MutationObserver:', error);
+            } finally {
+                observerActive = false;
             }
         });
         
