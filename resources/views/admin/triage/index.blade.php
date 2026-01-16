@@ -4,9 +4,83 @@
 @section('page-title', 'Triage Queue')
 
 @section('content')
+<!-- Toast Container -->
+<div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-2"></div>
+
 <script>
     // CRITICAL: Define these functions BEFORE Alpine.js processes the page
     // This script runs immediately when the page loads, before Alpine initializes
+    
+    // Modern Toast Notification System
+    function showToast(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            console.warn('Toast container not found, falling back to alert');
+            alert(message);
+            return;
+        }
+        
+        const toastId = 'toast-' + Date.now();
+        const typeColors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-500'
+        };
+        const typeIcons = {
+            success: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+            error: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+            warning: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>',
+            info: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        };
+        
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white ${typeColors[type] || typeColors.info} transform transition-all duration-300 ease-in-out min-w-[300px] max-w-md`;
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        
+        toast.innerHTML = `
+            <div class="flex-shrink-0">
+                ${typeIcons[type] || typeIcons.info}
+            </div>
+            <div class="flex-1 text-sm font-medium">${message}</div>
+            <button onclick="closeToast('${toastId}')" class="flex-shrink-0 text-white hover:text-gray-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Auto-remove after duration
+        if (duration > 0) {
+            setTimeout(() => {
+                closeToast(toastId);
+            }, duration);
+        }
+    }
+    
+    function closeToast(toastId) {
+        const toast = document.getElementById(toastId);
+        if (toast) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+    }
+    
+    window.showToast = showToast;
+    window.closeToast = closeToast;
     
     // Track which ticket is currently loading recommendations to prevent duplicates
     let loadingRecommendationsForTicket = null;
@@ -979,8 +1053,12 @@
         })
         .then(data => {
             console.log('Success:', data);
-            alert(data.message || 'Ticket assigned successfully!');
-            location.reload();
+            const message = data.message || 'Ticket assigned successfully!';
+            showToast(message, 'success', 2000);
+            // Refresh page after toast is shown
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         })
         .catch(error => {
             console.error('Fetch error:', error);
@@ -1306,8 +1384,12 @@
                 })
                 .then(data => {
                     console.log('Success:', data);
-                    alert(data.message || 'Ticket assigned successfully!');
-                    location.reload();
+                    const message = data.message || 'Ticket assigned successfully!';
+                    showToast(message, 'success', 2000);
+                    // Refresh page after toast is shown
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
