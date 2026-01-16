@@ -87,8 +87,9 @@
 
                         <!-- Actions -->
                         <div class="col-span-2 flex items-center justify-end gap-2">
-                            <button @click="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}" 
+                            <button @click="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}; updateAssignForm({{ $ticket['id'] }})" 
                                     data-ticket-id="{{ $ticket['id'] }}"
+                                    onclick="console.log('Assign button clicked for ticket {{ $ticket['id'] }}'); window.currentTicketId = {{ $ticket['id'] }};"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm hover:shadow-md">
                                 Assign
                             </button>
@@ -130,9 +131,9 @@
                 </svg>
             </button>
         </div>
-        <form method="POST" id="assign-form" x-bind:action="`/admin/triage/${selectedTicket}/assign`">
+        <form method="POST" id="assign-form" action="" data-base-url="/admin/triage">
             @csrf
-            <input type="hidden" name="ticket_id" x-bind:value="selectedTicket" id="ticket-id-input">
+            <input type="hidden" name="ticket_id" id="ticket-id-input" value="">
             <div class="mb-6">
                 <label class="block text-sm font-medium text-slate-700 mb-2">Select Technician</label>
                 <select name="technician_id" id="technician-select" required 
@@ -222,9 +223,38 @@
         location.reload();
     }, 60000); // Changed to 60 seconds since we have real-time countdown
 
+    // Function to update form when ticket is selected
+    function updateAssignForm(ticketId) {
+        console.log('Updating form for ticket:', ticketId);
+        const form = document.getElementById('assign-form');
+        const ticketInput = document.getElementById('ticket-id-input');
+        if (form && ticketInput) {
+            form.action = `/admin/triage/${ticketId}/assign`;
+            ticketInput.value = ticketId;
+            console.log('Form updated:', form.action, ticketInput.value);
+        }
+    }
+
     // Handle form submission with fetch for better UX
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded, setting up form handler');
+        console.log('Alpine.js loaded:', typeof Alpine !== 'undefined');
+        
+        // Update form when modal opens (Alpine.js watch)
+        const observer = new MutationObserver(function(mutations) {
+            const modal = document.querySelector('[x-show="assignModalOpen"]');
+            if (modal && !modal.hasAttribute('style') || modal.style.display !== 'none') {
+                const ticketId = window.currentTicketId || document.querySelector('[x-data]')?.__x?.$data?.selectedTicket;
+                if (ticketId) {
+                    updateAssignForm(ticketId);
+                }
+            }
+        });
+        
+        const container = document.querySelector('[x-data]');
+        if (container) {
+            observer.observe(container, { attributes: true, attributeFilter: ['style', 'class'] });
+        }
         
         // Use event delegation for form submission
         document.addEventListener('submit', function(e) {
