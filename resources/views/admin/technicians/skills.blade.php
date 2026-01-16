@@ -245,8 +245,8 @@
         loadDeviceTypes();
     }
     
-    function loadDeviceTypes() {
-        fetch('/admin/technician-skills/device-types', {
+    function loadDeviceTypes(technicianId) {
+        return fetch('/admin/technician-skills/device-types', {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
@@ -258,6 +258,10 @@
         .then(data => {
             const select = document.getElementById('device-type-select');
             if (select && data.device_types) {
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
                 data.device_types.forEach(type => {
                     const option = document.createElement('option');
                     option.value = type.id;
@@ -265,6 +269,12 @@
                     select.appendChild(option);
                 });
             }
+            return data;
+        })
+        .catch(error => {
+            console.error('Error loading device types:', error);
+            showToast('Error loading device types', 'error');
+            return { device_types: [] };
         });
     }
     
@@ -396,18 +406,34 @@
         })
         .then(data => {
             if (data.message) {
-                alert(data.message);
+                showToast(data.message, 'success');
                 // Get technician name before reloading
                 const technicianNameEl = document.getElementById('modal-technician-name');
                 const technicianName = technicianNameEl ? technicianNameEl.textContent : '';
                 
-                // Reload the modal content
-                if (technicianName) {
-                    openSkillModal(technicianId, technicianName);
-                } else {
-                    // Fallback: reload the page or refresh modal
-                    location.reload();
-                }
+                // Hide the form
+                hideAddSkillForm();
+                
+                // Reload the skills list without closing modal
+                fetch(`/admin/technician-skills/${technicianId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    renderSkillsContent(technicianId, data);
+                })
+                .catch(error => {
+                    console.error('Error reloading skills:', error);
+                    // Fallback: reload modal
+                    if (technicianName) {
+                        openSkillModal(technicianId, technicianName);
+                    }
+                });
             }
         })
         .catch(error => {
