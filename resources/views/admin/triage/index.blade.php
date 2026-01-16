@@ -1,0 +1,174 @@
+@extends('layouts.app')
+
+@section('title', 'Triage Queue')
+@section('page-title', 'Triage Queue')
+
+@section('content')
+<div class="space-y-6" x-data="{ assignModalOpen: false, selectedTicket: null }">
+    <!-- Header with Stats -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-2xl font-bold text-slate-800">Pending Tickets</h3>
+            <p class="text-sm text-slate-500 mt-1">Monitor and assign incoming repair requests</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <span class="text-xs text-slate-500">Total Pending</span>
+                <p class="text-2xl font-bold text-slate-800">{{ count($tickets) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tickets Grid - Floating Cards -->
+    <div class="space-y-4">
+        @forelse($tickets as $ticket)
+            <div class="group relative bg-white rounded-2xl border border-slate-100 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ticket-enter {{ $ticket['priority'] === 'high' ? 'border-l-4 border-l-pulse-orange' : '' }}">
+                <!-- Urgent Pulse Effect -->
+                @if($ticket['countdown'] < 60 && $ticket['status'] === 'pending_triage')
+                    <div class="absolute inset-0 timer-urgent pointer-events-none"></div>
+                @endif
+                
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-12 gap-6 items-center">
+                        <!-- Customer & Device Info -->
+                        <div class="col-span-4 flex items-center gap-4">
+                            <div class="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-lg">Ticket #{{ $ticket['id'] }}</p>
+                                <p class="text-sm text-slate-600 mt-1">{{ $ticket['customer'] }}</p>
+                                <p class="text-xs text-slate-400 mt-0.5">{{ $ticket['device'] }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Issue Description -->
+                        <div class="col-span-3">
+                            <p class="text-sm text-slate-700 line-clamp-2">{{ Str::limit($ticket['issue'], 80) }}</p>
+                        </div>
+
+                        <!-- Priority Badge -->
+                        <div class="col-span-1">
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border shadow-sm
+                                {{ $ticket['priority'] === 'high' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-50 text-slate-600 border-slate-200' }}">
+                                @if($ticket['priority'] === 'high')
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse"></span>
+                                @endif
+                                {{ ucfirst($ticket['priority']) }}
+                            </span>
+                        </div>
+
+                        <!-- Countdown Timer -->
+                        <div class="col-span-2">
+                            @if($ticket['countdown'] > 0)
+                                <div class="flex items-center gap-3">
+                                    <div class="relative h-12 w-12">
+                                        <svg class="h-full w-full rotate-90 transform text-slate-100" viewBox="0 0 36 36">
+                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
+                                            <path class="text-pulse-orange animate-[dash_5s_linear_forwards]" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
+                                        </svg>
+                                        <span class="absolute inset-0 flex items-center justify-center text-xs font-bold {{ $ticket['countdown'] < 60 ? 'text-pulse-orange' : 'text-slate-600' }}">
+                                            {{ $ticket['countdown_formatted'] }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Time Remaining</p>
+                                        <p class="text-sm font-semibold text-slate-800">Auto-assign soon</p>
+                                    </div>
+                                </div>
+                            @else
+                                <span class="text-xs text-slate-400">Expired</span>
+                            @endif
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="col-span-2 flex items-center justify-end gap-2">
+                            <button @click="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm hover:shadow-md">
+                                Assign
+                            </button>
+                            <form method="POST" action="{{ route('admin.triage.reject', $ticket['id']) }}" class="inline">
+                                @csrf
+                                <button type="submit" onclick="return confirm('Reject this ticket?')" 
+                                        class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium text-sm">
+                                    Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-lg p-12 text-center">
+                <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-slate-500 text-lg font-medium">No pending tickets</p>
+                <p class="text-slate-400 text-sm mt-1">All tickets have been processed</p>
+            </div>
+        @endforelse
+    </div>
+</div>
+
+<!-- Assign Modal - Glassmorphic -->
+<div x-show="assignModalOpen" 
+     x-cloak
+     @click.away="assignModalOpen = false"
+     class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+     style="display: none;">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all ticket-enter">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-slate-800">Assign Technician</h3>
+            <button @click="assignModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form :action="`/admin/triage/${selectedTicket}/assign`" method="POST">
+            @csrf
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Select Technician</label>
+                <select name="technician_id" required 
+                        class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    <option value="">Choose a technician...</option>
+                    @foreach($technicians as $tech)
+                        @if($tech['available'])
+                            <option value="{{ $tech['id'] }}">{{ $tech['name'] }} (Available)</option>
+                        @else
+                            <option value="{{ $tech['id'] }}" disabled>{{ $tech['name'] }} ({{ $tech['active_jobs'] }} active jobs)</option>
+                        @endif
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" @click="assignModalOpen = false" 
+                        class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
+                    Assign Now
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+@endsection
+
+@push('scripts')
+<script>
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        location.reload();
+    }, 30000);
+</script>
+@endpush
