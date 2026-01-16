@@ -88,6 +88,7 @@
                         <!-- Actions -->
                         <div class="col-span-2 flex items-center justify-end gap-2">
                             <button @click="assignModalOpen = true; selectedTicket = {{ $ticket['id'] }}" 
+                                    data-ticket-id="{{ $ticket['id'] }}"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm hover:shadow-md">
                                 Assign
                             </button>
@@ -129,9 +130,9 @@
                 </svg>
             </button>
         </div>
-        <form :action="`/admin/triage/${selectedTicket}/assign`" method="POST" id="assign-form">
+        <form method="POST" id="assign-form" x-bind:action="`/admin/triage/${selectedTicket}/assign`">
             @csrf
-            <input type="hidden" name="ticket_id" :value="selectedTicket">
+            <input type="hidden" name="ticket_id" x-bind:value="selectedTicket" id="ticket-id-input">
             <div class="mb-6">
                 <label class="block text-sm font-medium text-slate-700 mb-2">Select Technician</label>
                 <select name="technician_id" id="technician-select" required 
@@ -220,58 +221,149 @@
         location.reload();
     }, 60000); // Changed to 60 seconds since we have real-time countdown
 
+    // Store current ticket ID globally
+    window.currentTicketId = null;
+    
+    // Handle assign button clicks to store ticket ID
+    document.addEventListener('click', function(e) {
+        const assignBtn = e.target.closest('button[data-ticket-id]');
+        if (assignBtn) {
+            window.currentTicketId = assignBtn.getAttribute('data-ticket-id');
+        }
+    });
+
     // Fix form submission for assign modal
     document.addEventListener('DOMContentLoaded', function() {
-        const assignForm = document.getElementById('assign-form');
-        if (assignForm) {
-            assignForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const form = this;
-                const formData = new FormData(form);
-                const ticketId = form.querySelector('input[name="ticket_id"]').value;
-                const technicianId = form.querySelector('select[name="technician_id"]').value;
-                
-                if (!technicianId) {
-                    alert('Please select a technician');
-                    return;
-                }
-                
-                // Disable submit button
-                const submitBtn = form.querySelector('#assign-submit-btn');
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Assigning...';
-                
-                // Submit via fetch
-                fetch(`/admin/triage/${ticketId}/assign`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || formData.get('_token')
-                    },
-                    body: JSON.stringify({
-                        technician_id: parseInt(technicianId),
-                        _token: formData.get('_token')
-                    })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
+        // Wait for Alpine.js to initialize
+        setTimeout(function() {
+            const assignForm = document.getElementById('assign-form');
+            if (assignForm) {
+                assignForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const form = this;
+                    const formData = new FormData(form);
+                    
+                    // Get ticket ID - try multiple methods
+                    let ticketId = null;
+                    
+                    // Method 1: From hidden input (Alpine.js should have updated it)
+                    const ticketIdInput = form.querySelector('#ticket-id-input');
+                    if (ticketIdInput && ticketIdInput.value) {
+                        ticketId = ticketIdInput.value;
                     }
-                    return response.json().then(err => Promise.reject(err));
-                })
-                .then(data => {
-                    alert('Ticket assigned successfully!');
-                    location.reload();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert(error.message || 'Failed to assign ticket. Please try again.');
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Assign Now';
+                    
+                    // Method 2: From form action attribute (Alpine.js binding)
+                    if (!ticketId) {
+                        const formAction = form.getAttribute('action') || form.action;
+                        if (formAction && formAction.includes('/admin/triage/')) {
+                            const match = formAction.match(/\/admin\/triage\/(\d+)\/assign/);
+                            if (match) {
+                                ticketId = match[1];
+                            }
+                        }
+                    }
+                    
+                    // Method 3: From global variable set by button click
+                    if (!ticketId && window.currentTicketId) {
+                        ticketId = window.currentTicketId;
+                    }
+                    
+                    // Method 4: Try to get from Alpine.js directly
+                    if (!ticketId) {
+                        const modal = form.closest('[x-data]');
+                        if (modal) {
+                            try {
+                                // Access Alpine.js data
+                                const alpineData = window.Alpine?.$data(modal);
+                                if (alpineData && alpineData.selectedTicket) {
+                                    ticketId = alpineData.selectedTicket;
+                                }
+                            } catch (e) {
+                                console.log('Could not access Alpine.js data:', e);
+                            }
+                        }
+                    }
+                    
+                    const technicianId = form.querySelector('select[name="technician_id"]').value;
+                    
+                    if (!ticketId) {
+                        alert('Error: Could not determine ticket ID. Please refresh the page and try again.');
+                        console.error('Ticket ID not found. Form:', form, 'Action:', form.action);
+                        return;
+                    }
+                    
+                    if (!technicianId) {
+                        alert('Please select a technician');
+                        return;
+                    }
+                    
+                    // Disable submit button
+                    const submitBtn = form.querySelector('#assign-submit-btn');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Assigning...';
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                                     form.querySelector('input[name="_token"]')?.value ||
+                                     formData.get('_token');
+                    
+                    if (!csrfToken) {
+                        alert('CSRF token not found. Please refresh the page.');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        return;
+                    }
+                    
+                    // Submit via fetch
+                    fetch(`/admin/triage/${ticketId}/assign`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            technician_id: parseInt(technicianId),
+                            _token: csrfToken
+                        })
+                    })
+                    .then(response => {
+                        // Check if response is JSON
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            if (response.ok) {
+                                return response.json().catch(() => ({ message: 'Success' }));
+                            }
+                            return response.json().then(err => Promise.reject(err));
+                        } else {
+                            // HTML response (redirect)
+                            if (response.ok || response.redirected) {
+                                return { message: 'Success', redirect: true };
+                            }
+                            throw new Error('Request failed');
+                        }
+                    })
+                    .then(data => {
+                        if (data.redirect) {
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Ticket assigned successfully!');
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        const errorMsg = error.message || error.error || 'Failed to assign ticket. Please try again.';
+                        alert(errorMsg);
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    });
                 });
-            });
-        }
+            }
+        }, 500); // Increased timeout to ensure Alpine.js is ready
     });
 </script>
 @endpush
