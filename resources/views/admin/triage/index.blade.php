@@ -5,7 +5,7 @@
 
 @section('content')
 <!-- Toast Container -->
-<div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-2"></div>
+<div id="toast-container" class="fixed top-4 right-4 z-[99999] space-y-2" style="z-index: 99999;"></div>
 
 <script>
     // CRITICAL: Define these functions BEFORE Alpine.js processes the page
@@ -983,8 +983,7 @@
         
         const form = document.getElementById('assign-form');
         if (!form) {
-            console.error('Form not found');
-            alert('Form not found. Please refresh the page.');
+            showToast('Form not found. Please refresh the page.', 'error');
             return;
         }
         
@@ -1342,7 +1341,7 @@
                 }
                 
                 if (!technicianId) {
-                    alert('Please select a technician');
+                    showToast('Please select a technician', 'warning');
                     return;
                 }
                 
