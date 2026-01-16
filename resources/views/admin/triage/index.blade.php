@@ -402,8 +402,15 @@
         // Use event delegation for button clicks (more reliable)
         document.addEventListener('click', function(e) {
             const target = e.target;
-            if (target && target.id === 'assign-submit-btn') {
-                console.log('Assign submit button clicked via delegation');
+            const submitBtn = target.closest('#assign-submit-btn') || (target.id === 'assign-submit-btn' ? target : null);
+            
+            if (submitBtn) {
+                console.log('Assign submit button clicked via delegation', {
+                    target: target.tagName,
+                    buttonId: submitBtn.id,
+                    buttonType: submitBtn.type,
+                    buttonDisabled: submitBtn.disabled
+                });
                 e.preventDefault();
                 e.stopPropagation();
                 
@@ -413,9 +420,9 @@
                     console.error('handleAssignSubmit not found');
                     alert('Error: Form handler not loaded. Please refresh.');
                 }
-                return;
+                return false;
             }
-        });
+        }, true); // Use capture phase to catch early
         
         // Use event delegation for form submission (backup)
         document.addEventListener('submit', function(e) {
