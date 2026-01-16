@@ -285,14 +285,47 @@
                         .then(response => response.json())
                         .then(data => {
                             console.log('Direct API call successful:', data);
-                            // Try to update Alpine if it becomes available
-                            setTimeout(() => {
+                            console.log('Recommendations received:', data.recommendations?.length || 0);
+                            
+                            // Store recommendations globally for when Alpine initializes
+                            window.pendingRecommendations = {
+                                ticketId: ticketId,
+                                recommendations: data.recommendations || [],
+                                timestamp: Date.now()
+                            };
+                            
+                            // Try to force Alpine initialization first
+                            const element = document.querySelector('[x-data]');
+                            if (element && typeof Alpine !== 'undefined' && !element.__x) {
+                                console.log('Attempting to force Alpine initialization...');
+                                try {
+                                    Alpine.initTree(element);
+                                    console.log('Alpine.initTree called');
+                                } catch (e) {
+                                    console.warn('Alpine.initTree failed:', e);
+                                }
+                            }
+                            
+                            // Try to update Alpine if it becomes available - with multiple retries
+                            let alpineRetryCount = 0;
+                            const tryUpdateAlpine = () => {
+                                alpineRetryCount++;
                                 const el = document.querySelector('[x-data]');
                                 if (el && el.__x) {
-                                    el.__x.$data.recommendations = data.recommendations || [];
+                                    console.log('Alpine component found! Updating recommendations...');
+                                    el.__x.$data.recommendations = window.pendingRecommendations.recommendations;
                                     el.__x.$data.loadingRecommendations = false;
+                                    console.log('Recommendations updated in Alpine:', el.__x.$data.recommendations.length);
+                                    delete window.pendingRecommendations; // Clean up
+                                } else if (alpineRetryCount < 40) { // Try for up to 2 seconds
+                                    setTimeout(tryUpdateAlpine, 50);
+                                } else {
+                                    console.warn('Alpine never initialized, manually rendering recommendations...');
+                                    // Manually render recommendations in the modal
+                                    renderRecommendationsManually(data.recommendations || []);
                                 }
-                            }, 100);
+                            };
+                            tryUpdateAlpine();
                         })
                         .catch(error => {
                             console.error('Direct API call failed:', error);
