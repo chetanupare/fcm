@@ -64,14 +64,14 @@
 
                         <!-- Countdown Timer -->
                         <div class="col-span-2">
-                            @if($ticket['countdown'] > 0)
-                                <div class="flex items-center gap-3">
+                            @if($ticket['triage_deadline_at'])
+                                <div class="flex items-center gap-3" data-ticket-id="{{ $ticket['id'] }}" data-deadline="{{ $ticket['triage_deadline_at'] }}">
                                     <div class="relative h-12 w-12">
                                         <svg class="h-full w-full rotate-90 transform text-slate-100" viewBox="0 0 36 36">
                                             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
-                                            <path class="text-pulse-orange animate-[dash_5s_linear_forwards]" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
+                                            <path class="countdown-progress text-pulse-orange" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" />
                                         </svg>
-                                        <span class="absolute inset-0 flex items-center justify-center text-xs font-bold {{ $ticket['countdown'] < 60 ? 'text-pulse-orange' : 'text-slate-600' }}">
+                                        <span class="countdown-text absolute inset-0 flex items-center justify-center text-xs font-bold {{ $ticket['countdown'] < 60 ? 'text-pulse-orange' : 'text-slate-600' }}">
                                             {{ $ticket['countdown_formatted'] }}
                                         </span>
                                     </div>
@@ -81,7 +81,7 @@
                                     </div>
                                 </div>
                             @else
-                                <span class="text-xs text-slate-400">Expired</span>
+                                <span class="text-xs text-slate-400">No deadline</span>
                             @endif
                         </div>
 
@@ -167,10 +167,58 @@
 
 @push('scripts')
 <script>
-    // Auto-refresh every 30 seconds
+    // Real-time countdown timer
+    function updateCountdowns() {
+        document.querySelectorAll('[data-deadline]').forEach(function(element) {
+            const deadline = new Date(element.getAttribute('data-deadline'));
+            const now = new Date();
+            const diff = Math.max(0, Math.floor((deadline - now) / 1000)); // seconds remaining
+            
+            const countdownText = element.querySelector('.countdown-text');
+            const countdownProgress = element.querySelector('.countdown-progress');
+            
+            if (diff > 0) {
+                // Format as MM:SS
+                const minutes = Math.floor(diff / 60);
+                const seconds = diff % 60;
+                const formatted = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                
+                countdownText.textContent = formatted;
+                
+                // Update color if less than 60 seconds
+                if (diff < 60) {
+                    countdownText.classList.remove('text-slate-600');
+                    countdownText.classList.add('text-pulse-orange');
+                    element.closest('.ticket-enter')?.classList.add('timer-urgent');
+                } else {
+                    countdownText.classList.remove('text-pulse-orange');
+                    countdownText.classList.add('text-slate-600');
+                }
+                
+                // Update progress circle (assuming 5 minutes = 300 seconds total)
+                const totalSeconds = 300; // 5 minutes
+                const percentage = Math.min(100, (diff / totalSeconds) * 100);
+                const dashOffset = 100 - percentage;
+                countdownProgress.style.strokeDashoffset = dashOffset;
+            } else {
+                countdownText.textContent = '00:00';
+                countdownText.classList.remove('text-slate-600');
+                countdownText.classList.add('text-pulse-orange');
+                if (countdownProgress) {
+                    countdownProgress.style.strokeDashoffset = 0;
+                }
+            }
+        });
+    }
+
+    // Update countdowns every second
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns(); // Initial update
+
+    // Auto-refresh every 30 seconds (reduced frequency since countdown updates in real-time)
     setInterval(() => {
         location.reload();
-    }, 30000);
+    }, 60000); // Changed to 60 seconds since we have real-time countdown
 
     // Fix form submission for assign modal
     document.addEventListener('DOMContentLoaded', function() {

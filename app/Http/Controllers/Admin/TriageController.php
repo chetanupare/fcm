@@ -31,6 +31,7 @@ class TriageController extends Controller
                     'priority' => $ticket->priority,
                     'countdown' => $countdown,
                     'countdown_formatted' => gmdate('i:s', $countdown),
+                    'triage_deadline_at' => $ticket->triage_deadline_at?->toIso8601String(), // ISO format for JavaScript
                     'created_at' => $ticket->created_at->format('Y-m-d H:i'),
                 ];
             });
