@@ -165,13 +165,26 @@
                 console.log('=== LOADING RECOMMENDATIONS FROM openAssignModal ===');
                 console.log('Ticket ID:', ticketId);
                 console.log('Alpine component:', alpineComponent ? 'Found' : 'Missing');
-                console.log('window.loadRecommendations:', typeof window.loadRecommendations);
+                console.log('window.loadRecommendations type:', typeof window.loadRecommendations);
+                console.log('window.loadRecommendations value:', window.loadRecommendations);
                 
-                if (ticketId && typeof window.loadRecommendations === 'function') {
-                    console.log('Calling window.loadRecommendations NOW...');
-                    window.loadRecommendations(ticketId, alpineComponent);
+                // Force call - don't check, just call it
+                if (ticketId) {
+                    console.log('FORCING CALL to window.loadRecommendations...');
+                    try {
+                        if (typeof window.loadRecommendations === 'function') {
+                            console.log('Calling window.loadRecommendations NOW...');
+                            window.loadRecommendations(ticketId, alpineComponent);
+                        } else {
+                            console.error('ERROR: window.loadRecommendations is not a function!');
+                            console.error('Type:', typeof window.loadRecommendations);
+                            console.error('Value:', window.loadRecommendations);
+                        }
+                    } catch (error) {
+                        console.error('ERROR calling loadRecommendations:', error);
+                    }
                 } else {
-                    console.error('window.loadRecommendations not available!');
+                    console.error('No ticket ID provided!');
                 }
             } else {
                 // Retry if Alpine not ready yet
