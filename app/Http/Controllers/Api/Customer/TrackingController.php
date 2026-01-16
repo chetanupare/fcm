@@ -16,15 +16,26 @@ class TrackingController extends Controller
     public function track(Request $request, int $ticketId)
     {
         $ticket = Ticket::where('customer_id', $request->user()->id)
-            ->with(['device', 'jobs.technician.user', 'jobs.quote'])
+            ->with(['device', 'customer', 'jobs.technician.user', 'jobs.quote', 'activeJob.technician.user'])
             ->findOrFail($ticketId);
 
         $timeline = $this->buildTimeline($ticket);
+        $activeJob = $ticket->activeJob;
 
         return response()->json([
-            'ticket' => $ticket,
+            'id' => $ticket->id,
+            'status' => $ticket->status,
+            'technician' => $activeJob && $activeJob->technician ? [
+                'id' => $activeJob->technician->id,
+                'name' => $activeJob->technician->user->name,
+                'phone' => $activeJob->technician->user->phone,
+                'location' => $activeJob->technician->latitude && $activeJob->technician->longitude ? [
+                    'latitude' => $activeJob->technician->latitude,
+                    'longitude' => $activeJob->technician->longitude,
+                ] : null,
+            ] : null,
             'timeline' => $timeline,
-            'current_status' => $this->getCurrentStatus($ticket),
+            'ticket' => $ticket, // Keep for backward compatibility
         ]);
     }
 
@@ -43,50 +54,72 @@ class TrackingController extends Controller
 
     protected function buildTimeline(Ticket $ticket): array
     {
-        $timeline = [
-            [
-                'status' => 'received',
-                'label' => 'Request Received',
-                'timestamp' => $ticket->created_at,
-                'completed' => true,
-            ],
+        $timeline = [];
+
+        // Request received
+        $timeline[] = [
+            'status' => 'pending_triage',
+            'note' => 'Service request received',
+            'created_at' => $ticket->created_at->toISOString(),
         ];
 
-        if ($ticket->status !== 'pending_triage') {
+        // Triage handled
+        if ($ticket->triage_handled_at) {
             $timeline[] = [
-                'status' => 'assigned',
-                'label' => 'Technician Assigned',
-                'timestamp' => $ticket->triage_handled_at,
-                'completed' => true,
+                'status' => 'triage',
+                'note' => 'Ticket under review',
+                'created_at' => $ticket->triage_handled_at->toISOString(),
             ];
         }
 
+        // Job statuses
         $activeJob = $ticket->activeJob;
         if ($activeJob) {
-            if ($activeJob->status === 'en_route') {
+            if ($activeJob->status === 'offered') {
                 $timeline[] = [
-                    'status' => 'on_way',
-                    'label' => 'Technician On Way',
-                    'timestamp' => $activeJob->updated_at,
-                    'completed' => true,
+                    'status' => 'assigned',
+                    'note' => 'Job offered to technician',
+                    'created_at' => $activeJob->created_at->toISOString(),
                 ];
             }
 
-            if (in_array($activeJob->status, ['arrived', 'diagnosing', 'repairing', 'quality_check'])) {
+            if ($activeJob->status === 'accepted') {
                 $timeline[] = [
-                    'status' => 'working',
-                    'label' => 'Repair In Progress',
-                    'timestamp' => $activeJob->updated_at,
-                    'completed' => true,
+                    'status' => 'accepted',
+                    'note' => 'Technician accepted the job',
+                    'created_at' => $activeJob->offer_accepted_at?->toISOString() ?? $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'en_route') {
+                $timeline[] = [
+                    'status' => 'en_route',
+                    'note' => 'Technician on the way',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if ($activeJob->status === 'arrived') {
+                $timeline[] = [
+                    'status' => 'arrived',
+                    'note' => 'Technician arrived at location',
+                    'created_at' => $activeJob->updated_at->toISOString(),
+                ];
+            }
+
+            if (in_array($activeJob->status, ['diagnosing', 'repairing', 'quality_check'])) {
+                $timeline[] = [
+                    'status' => 'in_progress',
+                    'note' => 'Repair in progress',
+                    'created_at' => $activeJob->updated_at->toISOString(),
                 ];
             }
 
             if ($activeJob->status === 'completed') {
                 $timeline[] = [
-                    'status' => 'done',
-                    'label' => 'Repair Completed',
-                    'timestamp' => $activeJob->released_at ?? $activeJob->updated_at,
-                    'completed' => true,
+                    'status' => 'completed',
+                    'note' => 'Repair completed',
+                    'created_at' => ($activeJob->released_at ?? $activeJob->updated_at)->toISOString(),
                 ];
             }
         }

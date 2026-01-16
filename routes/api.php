@@ -55,7 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Technician routes
     Route::middleware('role:technician')->prefix('technician')->name('technician.')->group(function () {
-        Route::get('/status', [StatusController::class, 'update']); // GET for current status
+        Route::get('/status', [StatusController::class, 'index']); // GET for current status
         Route::put('/status', [StatusController::class, 'update']);
         Route::put('/location', [StatusController::class, 'updateLocation']);
         

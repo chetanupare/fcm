@@ -12,6 +12,21 @@ use Illuminate\Http\Request;
  */
 class StatusController extends Controller
 {
+    public function index(Request $request)
+    {
+        $technician = $request->user()->technician;
+        
+        if (!$technician) {
+            return response()->json([
+                'message' => 'Technician profile not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => $technician->status,
+        ]);
+    }
+
     public function update(Request $request)
     {
         $request->validate([
