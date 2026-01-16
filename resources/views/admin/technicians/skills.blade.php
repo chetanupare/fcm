@@ -181,6 +181,7 @@
                         </button>
                         <button type="submit" 
                                 id="add-skill-submit-btn"
+                                disabled
                                 class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                             <span class="flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,16 +263,29 @@
         // Reset form fields
         const deviceSelect = document.getElementById('device-type-select');
         const complexitySelect = document.getElementById('complexity-level-select');
-        if (deviceSelect) deviceSelect.value = '';
-        if (complexitySelect) complexitySelect.value = 'basic'; // Set default
+        
+        if (deviceSelect) {
+            deviceSelect.value = '';
+        }
+        
+        // Set default complexity level to "basic"
+        if (complexitySelect) {
+            complexitySelect.value = 'basic';
+        }
         
         // Load device types if not already loaded
         loadDeviceTypes(technicianId).then(() => {
-            // Update button state after a brief delay to ensure DOM is ready
+            // Update button state - complexity is already "basic", so button will enable when device type is selected
             setTimeout(() => {
                 updateAddButtonState();
+                console.log('Button state updated. Device:', deviceSelect?.value, 'Complexity:', complexitySelect?.value, 'Button disabled:', document.getElementById('add-skill-submit-btn')?.disabled);
             }, 100);
         });
+        
+        // Also update button state immediately when device type changes
+        if (deviceSelect) {
+            deviceSelect.addEventListener('change', updateAddButtonState, { once: false });
+        }
     }
     
     function hideAddSkillForm() {
