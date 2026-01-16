@@ -384,6 +384,76 @@
 
 @push('scripts')
 <script>
+    // CRITICAL: Define these functions IMMEDIATELY before Alpine.js processes the page
+    // They must be available when Alpine tries to bind @click handlers
+    (function() {
+        'use strict';
+        
+        // Define openAssignModal function - must be available before Alpine initializes
+        window.openAssignModal = function(ticketId) {
+            console.log('=== openAssignModal called for ticket:', ticketId);
+            
+            // Wait for Alpine to be ready
+            const checkAlpine = () => {
+                const element = document.querySelector('[x-data]');
+                if (element && element.__x) {
+                    const alpineComponent = element.__x;
+                    alpineComponent.$data.selectedTicket = ticketId;
+                    alpineComponent.$data.assignModalOpen = true;
+                    alpineComponent.$data.selectedTechnician = null;
+                    console.log('Modal state:', { assignModalOpen: alpineComponent.$data.assignModalOpen, selectedTicket: alpineComponent.$data.selectedTicket });
+                    
+                    // Load recommendations if function is available
+                    if (ticketId && typeof loadRecommendations === 'function') {
+                        loadRecommendations(ticketId, alpineComponent);
+                    }
+                } else {
+                    // Retry if Alpine not ready yet
+                    setTimeout(checkAlpine, 50);
+                }
+            };
+            checkAlpine();
+            
+            window.currentTicketId = ticketId;
+            
+            // Force modal to show
+            setTimeout(() => {
+                const modal = document.querySelector('[x-show="assignModalOpen"]');
+                if (modal) {
+                    console.log('Modal element found, removing inline style and x-cloak');
+                    modal.style.display = '';
+                    modal.removeAttribute('style');
+                    modal.removeAttribute('x-cloak');
+                }
+                
+                // Update form after modal is visible
+                if (typeof window.updateAssignForm === 'function') {
+                    window.updateAssignForm(ticketId);
+                }
+            }, 100);
+        };
+        
+        // Define closeAssignModal function
+        window.closeAssignModal = function() {
+            console.log('=== closeAssignModal called ===');
+            const element = document.querySelector('[x-data]');
+            if (element && element.__x) {
+                const alpineComponent = element.__x;
+                alpineComponent.$data.assignModalOpen = false;
+                alpineComponent.$data.selectedTicket = null;
+                alpineComponent.$data.selectedTechnician = null;
+                alpineComponent.$data.recommendations = [];
+                alpineComponent.$data.loadingRecommendations = false;
+            } else {
+                // Fallback: directly hide the modal
+                const modal = document.getElementById('assign-modal-overlay');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        };
+    })();
+    
     // Real-time countdown timer
     function updateCountdowns() {
         document.querySelectorAll('[data-deadline]').forEach(function(element) {
