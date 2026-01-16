@@ -287,12 +287,25 @@
                             console.log('Direct API call successful:', data);
                             console.log('Recommendations received:', data.recommendations?.length || 0);
                             
+                            // Hide "no recommendations" message initially
+                            const noRecommendationsMsg = document.getElementById('no-recommendations-message');
+                            if (noRecommendationsMsg) {
+                                noRecommendationsMsg.style.display = 'none';
+                            }
+                            
                             // Store recommendations globally for when Alpine initializes
                             window.pendingRecommendations = {
                                 ticketId: ticketId,
                                 recommendations: data.recommendations || [],
                                 timestamp: Date.now()
                             };
+                            
+                            // If no recommendations, show the message
+                            if (!data.recommendations || data.recommendations.length === 0) {
+                                if (noRecommendationsMsg) {
+                                    noRecommendationsMsg.style.display = 'block';
+                                }
+                            }
                             
                             // Try to force Alpine initialization first
                             const element = document.querySelector('[x-data]');
@@ -322,7 +335,16 @@
                                 } else {
                                     console.warn('Alpine never initialized, manually rendering recommendations...');
                                     // Manually render recommendations in the modal
-                                    renderRecommendationsManually(data.recommendations || []);
+                                    const recommendationsToRender = data.recommendations || [];
+                                    renderRecommendationsManually(recommendationsToRender);
+                                    
+                                    // If no recommendations after manual render, show message
+                                    if (recommendationsToRender.length === 0) {
+                                        const noRecommendationsMsg = document.getElementById('no-recommendations-message');
+                                        if (noRecommendationsMsg) {
+                                            noRecommendationsMsg.style.display = 'block';
+                                        }
+                                    }
                                 }
                             };
                             tryUpdateAlpine();
