@@ -219,207 +219,38 @@
     };
     
     window.openAssignModal = function(ticketId) {
-        
-        
         window.currentTicketId = ticketId;
         
-        // Wait for Alpine to be ready
-        let retryCount = 0;
-        const maxRetries = 5; // 5 * 50ms = 250ms max wait
-        
-        const checkAlpine = () => {
-            retryCount++;
-            
-            
-            // Try multiple selectors to find Alpine component
-            const element = document.querySelector('[x-data]') || 
-                           document.querySelector('.space-y-6[x-data]') ||
-                           document.querySelector('div[x-data]');
-            
-            if (element) {
-                
-                
-                
-            }
-            
-            
-            if (typeof Alpine !== 'undefined') {
-                
-            }
-            
-            if (element && element.__x) {
-                const alpineComponent = element.__x;
-                
-                alpineComponent.$data.selectedTicket = ticketId;
-                alpineComponent.$data.assignModalOpen = true;
-                alpineComponent.$data.selectedTechnician = null;
-                alpineComponent.$data.recommendations = [];
-                alpineComponent.$data.loadingRecommendations = false;
-                
-                
-                // Load recommendations immediately
-                
-                
-                
-                
-                
-                
-                // Force call - don't check, just call it
-                if (ticketId) {
-                    
-                    try {
-                        if (typeof window.loadRecommendations === 'function') {
-                            
-                            window.loadRecommendations(ticketId, alpineComponent);
-                        } else {
-                            
-                            
-                            
-                        }
-                    } catch (error) {
-                        
-                    }
-                } else {
-                    
-                }
-            } else {
-                // Retry if Alpine not ready yet
-                if (retryCount < maxRetries) {
-                    
-                    setTimeout(checkAlpine, 50);
-                } else {
-                    
-                    
-                    // Try to load recommendations even if Alpine isn't ready
-                    if (typeof window.loadRecommendations === 'function') {
-                        const element = document.querySelector('[x-data]');
-                        if (element) {
-                            // Wait a bit more and try again
-                            setTimeout(() => {
-                                if (element.__x) {
-                                    window.loadRecommendations(ticketId, element.__x);
-                                }
-                            }, 200);
-                        }
-                    }
-                }
-            }
-        };
-        checkAlpine();
+        // Open modal via Alpine if available
+        const element = document.querySelector('[x-data]');
+        if (element && element.__x) {
+            const alpineComponent = element.__x;
+            alpineComponent.$data.selectedTicket = ticketId;
+            alpineComponent.$data.assignModalOpen = true;
+            alpineComponent.$data.selectedTechnician = null;
+        }
         
         // Force modal to show
         setTimeout(() => {
             const modal = document.querySelector('[x-show="assignModalOpen"]');
             if (modal) {
-                
                 modal.style.display = '';
                 modal.removeAttribute('style');
                 modal.removeAttribute('x-cloak');
             }
             
-            // Update form after modal is visible
+            // Update form
             if (typeof window.updateAssignForm === 'function') {
                 window.updateAssignForm(ticketId);
             }
             
-            // Also ensure recommendations are loaded after modal is visible (fallback)
-            setTimeout(() => {
-                
-                const element = document.querySelector('[x-data]') || 
-                               document.querySelector('.space-y-6[x-data]') ||
-                               document.querySelector('div[x-data]');
-                
-                
-                
-                if (element && element.__x) {
-                    const alpineComponent = element.__x;
-                    
-                    if (typeof window.loadRecommendations === 'function') {
-                        
-                        window.loadRecommendations(ticketId, alpineComponent);
-                    } else {
-                        
-                    }
-                } else {
-                    
-                    
-                    // Last resort: try to call the API directly
-                    if (ticketId) {
-                        const url = `/admin/triage/${ticketId}/recommendations`;
-                        
-                        fetch(url, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                            },
-                            credentials: 'same-origin'
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            
-                            
-                            
-                            // Hide "no recommendations" message initially
-                            const noRecommendationsMsg = document.getElementById('no-recommendations-message');
-                            if (noRecommendationsMsg) {
-                                noRecommendationsMsg.style.display = 'none';
-                            }
-                            
-                            // Store recommendations globally for when Alpine initializes
-                            window.pendingRecommendations = {
-                                ticketId: ticketId,
-                                recommendations: data.recommendations || [],
-                                timestamp: Date.now()
-                            };
-                            
-                            // If no recommendations, show the message
-                            if (!data.recommendations || data.recommendations.length === 0) {
-                                if (noRecommendationsMsg) {
-                                    noRecommendationsMsg.style.display = 'block';
-                                }
-                            }
-                            
-                            // Try to force Alpine initialization first
-                            const element = document.querySelector('[x-data]');
-                            if (element && typeof Alpine !== 'undefined' && !element.__x) {
-                                
-                                try {
-                                    Alpine.initTree(element);
-                                    
-                                } catch (e) {
-                                    
-                                }
-                            }
-                            
-                            // Try to update Alpine if it becomes available - limited retries
-                            let alpineRetryCount = 0;
-                            const maxRetries = 10;
-                            const tryUpdateAlpine = () => {
-                                const el = document.querySelector('[x-data]');
-                                if (el && el.__x) {
-                                    el.__x.$data.recommendations = data.recommendations || [];
-                                    el.__x.$data.loadingRecommendations = false;
-                                    delete window.pendingRecommendations;
-                                } else if (alpineRetryCount < maxRetries) {
-                                    alpineRetryCount++;
-                                    setTimeout(tryUpdateAlpine, 50);
-                                } else {
-                                    if (window.renderRecommendationsManually) {
-                                        window.renderRecommendationsManually(data.recommendations || []);
-                                    }
-                                }
-                            };
-                            tryUpdateAlpine();
-                        })
-                        .catch(error => {
-                            
-                        });
-                    }
-                }
-            }, 300);
-        }, 100);
+            // Load recommendations manually
+            if (ticketId && window.loadRecommendationsManually) {
+                setTimeout(() => {
+                    window.loadRecommendationsManually(ticketId);
+                }, 100);
+            }
+        }, 50);
     };
     
     // Define closeAssignModal function
@@ -951,10 +782,8 @@
                     const retryElement = document.querySelector('[x-data]');
                     if (retryElement && retryElement.__x) {
                         
-                        if (typeof window.loadRecommendations === 'function') {
-                            window.loadRecommendations(ticketId, retryElement.__x);
-                        } else if (typeof loadRecommendations === 'function') {
-                            loadRecommendations(ticketId, retryElement.__x);
+                        if (window.loadRecommendationsManually) {
+                            window.loadRecommendationsManually(ticketId);
                         }
                     }
                 }, 500);
