@@ -85,7 +85,7 @@ class TechnicianSkillController extends Controller
             'complexity_level' => $request->complexity_level,
             'specialization' => $request->specialization,
             'certifications' => $request->certifications ?? [],
-            'experience_years' => $request->experience_years ?? 0,
+            'experience_years' => (int)($request->experience_years ?? 0),
             'is_primary' => $request->is_primary ?? false,
             'is_active' => true,
         ]);
