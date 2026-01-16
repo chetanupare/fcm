@@ -699,7 +699,7 @@
         }
     };
 
-    // REMOVED DUPLICATE - Function is defined above in @section('content') script block
+    // REMOVED DUPLICATE - Function is defined above in the content section script block
 
     // Function to update form when ticket is selected
     window.lastUpdatedTicketId = null;
