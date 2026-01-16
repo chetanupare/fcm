@@ -154,7 +154,7 @@
                     Cancel
                 </button>
                 <button type="button" id="assign-submit-btn"
-                        onclick="console.log('onclick fired'); if(typeof window.handleAssignSubmit === 'function') { event.preventDefault(); event.stopPropagation(); window.handleAssignSubmit(event); } else { console.error('handleAssignSubmit not available'); }"
+                        onclick="console.log('=== onclick fired ==='); console.log('handleAssignSubmit available:', typeof window.handleAssignSubmit); if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); } window.handleAssignSubmit(e); } else { console.error('handleAssignSubmit not available'); alert('Form handler not loaded. Please refresh.'); } return false;"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
                 </button>
@@ -237,11 +237,13 @@
         }
     };
 
-    // Handle form submission directly
+    // Handle form submission directly - define early
     window.handleAssignSubmit = function(event) {
-        console.log('handleAssignSubmit called');
-        event.preventDefault();
-        event.stopPropagation();
+        console.log('=== handleAssignSubmit called ===');
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
         
         const form = document.getElementById('assign-form');
         if (!form) {
