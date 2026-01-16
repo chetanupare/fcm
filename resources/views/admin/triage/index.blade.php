@@ -7,6 +7,143 @@
 <script>
     // CRITICAL: Define these functions BEFORE Alpine.js processes the page
     // This script runs immediately when the page loads, before Alpine initializes
+    
+    // Track which ticket is currently loading recommendations to prevent duplicates
+    let loadingRecommendationsForTicket = null;
+    
+    // Function to load recommendations for a ticket - Define FIRST so it's available
+    window.loadRecommendations = function loadRecommendations(ticketId, alpineComponent) {
+        console.log('=== loadRecommendations FUNCTION CALLED ===');
+        console.log('Ticket ID:', ticketId);
+        console.log('Alpine Component provided:', alpineComponent ? 'Yes' : 'No');
+        
+        if (!ticketId) {
+            console.error('ERROR: No ticket ID provided to loadRecommendations');
+            return;
+        }
+        
+        // Prevent duplicate loads
+        if (loadingRecommendationsForTicket === ticketId) {
+            console.log('Recommendations already loading for ticket:', ticketId);
+            return;
+        }
+        
+        // Get Alpine component if not provided
+        if (!alpineComponent) {
+            console.log('Alpine component not provided, trying to find it...');
+            const element = document.querySelector('[x-data]');
+            if (element && typeof Alpine !== 'undefined' && element.__x) {
+                alpineComponent = element.__x;
+                console.log('Found Alpine component');
+            } else {
+                console.error('ERROR: Alpine component not ready, cannot load recommendations');
+                // Retry after a delay
+                setTimeout(() => {
+                    const retryElement = document.querySelector('[x-data]');
+                    if (retryElement && retryElement.__x) {
+                        console.log('Retrying loadRecommendations after delay...');
+                        window.loadRecommendations(ticketId, retryElement.__x);
+                    }
+                }, 200);
+                return;
+            }
+        }
+        
+        if (!alpineComponent || !alpineComponent.$data) {
+            console.error('ERROR: Alpine component or $data not available');
+            return;
+        }
+        
+        loadingRecommendationsForTicket = ticketId;
+        console.log('=== STARTING RECOMMENDATIONS FETCH ===');
+        console.log('Ticket ID:', ticketId);
+        console.log('Alpine Component:', alpineComponent ? 'Found' : 'Missing');
+        
+        // Initialize recommendations array if it doesn't exist
+        if (!alpineComponent.$data.recommendations) {
+            alpineComponent.$data.recommendations = [];
+        }
+        alpineComponent.$data.loadingRecommendations = true;
+        console.log('Set loadingRecommendations to true');
+        
+        const url = `/admin/triage/${ticketId}/recommendations`;
+        console.log('=== FETCHING RECOMMENDATIONS ===');
+        console.log('URL:', url);
+        console.log('Full URL will be:', window.location.origin + url);
+        console.log('Ticket ID:', ticketId);
+        console.log('Alpine Component:', alpineComponent ? 'Found' : 'Missing');
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('=== RESPONSE RECEIVED ===');
+            console.log('Status:', response.status);
+            console.log('Status Text:', response.statusText);
+            console.log('OK:', response.ok);
+            
+            if (!response.ok) {
+                return response.json().then(data => {
+                    console.error('=== ERROR RESPONSE ===');
+                    console.error('Error Data:', data);
+                    throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('=== RECOMMENDATIONS DATA ===');
+            console.log('Full Response:', JSON.stringify(data, null, 2));
+            console.log('Recommendations Count:', data.recommendations ? data.recommendations.length : 0);
+            console.log('Debug Info:', data.debug);
+            
+            if (alpineComponent && alpineComponent.$data) {
+                console.log('Setting recommendations in Alpine...');
+                alpineComponent.$data.recommendations = data.recommendations || [];
+                alpineComponent.$data.loadingRecommendations = false;
+                console.log('Alpine recommendations set:', alpineComponent.$data.recommendations.length);
+            } else {
+                console.error('Alpine component or $data not available!');
+            }
+            loadingRecommendationsForTicket = null;
+            
+            if (data.recommendations && data.recommendations.length === 0) {
+                console.warn('=== NO RECOMMENDATIONS FOUND ===');
+                console.warn('Ticket ID:', ticketId);
+                console.warn('Debug Info:', data.debug);
+            } else if (data.recommendations && data.recommendations.length > 0) {
+                console.log('=== RECOMMENDATIONS FOUND ===');
+                data.recommendations.forEach((rec, index) => {
+                    console.log(`Recommendation ${index + 1}:`, {
+                        id: rec.id,
+                        name: rec.name,
+                        skill_score: rec.skill_match_score,
+                        combined_score: rec.combined_score
+                    });
+                });
+            }
+        })
+        .catch(error => {
+            console.error('=== ERROR LOADING RECOMMENDATIONS ===');
+            console.error('Error:', error);
+            if (alpineComponent && alpineComponent.$data) {
+                alpineComponent.$data.loadingRecommendations = false;
+                alpineComponent.$data.recommendations = [];
+            }
+            loadingRecommendationsForTicket = null;
+            
+            if (typeof alert !== 'undefined') {
+                alert('Failed to load technician recommendations. Please try again.');
+            }
+        });
+    };
+    
     window.openAssignModal = function(ticketId) {
         console.log('=== openAssignModal called for ticket:', ticketId);
         
