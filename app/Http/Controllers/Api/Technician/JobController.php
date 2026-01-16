@@ -226,6 +226,12 @@ class JobController extends Controller
         $job = Job::where('technician_id', $request->user()->technician->id)
             ->findOrFail($id);
 
+        // Auto-accept job if transitioning from 'offered' to 'en_route' or 'component_pickup'
+        if ($job->status === 'offered' && in_array($request->status, ['en_route', 'component_pickup'])) {
+            $this->jobOfferService->accept($job);
+            $job->refresh();
+        }
+
         // Validate state transition
         $validTransitions = $this->getValidTransitions($job->status);
         if (!in_array($request->status, $validTransitions)) {
