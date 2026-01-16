@@ -73,8 +73,11 @@ class JobController extends Controller
                     'issue' => $job->ticket->issue_description,
                     'status' => $job->status,
                     'address' => $job->ticket->address,
+                    'latitude' => $job->ticket->latitude,
+                    'longitude' => $job->ticket->longitude,
                     'preferred_date' => $job->ticket->preferred_date,
                     'preferred_time' => $job->ticket->preferred_time,
+                    'priority' => $job->ticket->priority,
                     'customer' => [
                         'name' => $job->ticket->customer->name,
                         'phone' => $job->ticket->customer->phone,
