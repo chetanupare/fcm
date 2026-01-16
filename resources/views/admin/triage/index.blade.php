@@ -817,7 +817,7 @@
                 </button>
                 <button type="button" id="assign-submit-btn"
                         @click.stop="window.submitAssignFormAlpine($event)"
-                        onclick="console.log('=== onclick fallback fired ==='); if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); } window.handleAssignSubmit(e); } return false;"
+                        onclick="if(typeof window.handleAssignSubmit === 'function') { var e = event || window.event; if(e) { e.preventDefault(); e.stopPropagation(); } window.handleAssignSubmit(e); } return false;"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
                 </button>
@@ -899,11 +899,11 @@
                 window.handleAssignSubmit(event);
             } catch (error) {
                 console.error('Error calling handleAssignSubmit:', error);
-                alert('Error submitting form: ' + error.message);
+                showToast('Error submitting form: ' + error.message, 'error');
             }
         } else {
             console.error('handleAssignSubmit not available');
-            alert('Form handler not loaded. Please refresh.');
+            showToast('Form handler not loaded. Please refresh.', 'error');
         }
     };
 
@@ -1004,12 +1004,12 @@
         }
         
         if (!technicianId) {
-            alert('Please select a technician');
+                    showToast('Please select a technician', 'warning');
             return;
         }
         
         if (!csrfToken) {
-            alert('CSRF token not found. Please refresh the page.');
+            showToast('CSRF token not found. Please refresh the page.', 'error');
             console.error('CSRF token missing');
             return;
         }
@@ -1062,7 +1062,7 @@
         .catch(error => {
             console.error('Fetch error:', error);
             const errorMsg = error.message || error.error || 'Failed to assign ticket. Please try again.';
-            alert(errorMsg);
+            showToast(errorMsg, 'error');
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
         });
@@ -1335,7 +1335,7 @@
                 console.log('Form data:', { ticketId, technicianId, hasCsrf: !!csrfToken });
                 
                 if (!ticketId) {
-                    alert('Error: Ticket ID not found. Please refresh and try again.');
+                    showToast('Error: Ticket ID not found. Please refresh and try again.', 'error');
                     console.error('Ticket ID missing');
                     return;
                 }
@@ -1393,7 +1393,7 @@
                 .catch(error => {
                     console.error('Fetch error:', error);
                     const errorMsg = error.message || error.error || 'Failed to assign ticket. Please try again.';
-                    alert(errorMsg);
+                    showToast(errorMsg, 'error');
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                 });
