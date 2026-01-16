@@ -15,6 +15,7 @@ class Job extends Model
     protected $table = 'service_jobs';
 
     protected $fillable = [
+        'location_id',
         'ticket_id',
         'technician_id',
         'status',

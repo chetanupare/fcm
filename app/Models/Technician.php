@@ -12,6 +12,7 @@ class Technician extends Model
     use HasFactory;
 
     protected $fillable = [
+        'location_id',
         'user_id',
         'status',
         'active_jobs_count',

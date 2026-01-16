@@ -11,6 +11,13 @@ class Component extends Model
     use HasFactory;
 
     protected $fillable = [
+        'location_id',
+        'barcode',
+        'supplier_id',
+        'reorder_level',
+        'reorder_quantity',
+        'last_reorder_date',
+        'alert_sent',
         'name',
         'sku',
         'description',
@@ -42,7 +49,14 @@ class Component extends Model
             'compatible_models' => 'array',
             'is_active' => 'boolean',
             'is_consumable' => 'boolean',
+            'last_reorder_date' => 'date',
+            'alert_sent' => 'boolean',
         ];
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 
     public function category(): BelongsTo
@@ -55,9 +69,24 @@ class Component extends Model
         return $this->belongsTo(ComponentBrand::class, 'brand_id');
     }
 
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
     public function isLowStock(): bool
     {
         return $this->stock_quantity <= $this->min_stock_level;
+    }
+
+    public function needsReorder(): bool
+    {
+        return $this->stock_quantity <= $this->reorder_level;
+    }
+
+    public function shouldSendAlert(): bool
+    {
+        return $this->needsReorder() && !$this->alert_sent;
     }
 
     public function getProfitMarginAttribute(): float

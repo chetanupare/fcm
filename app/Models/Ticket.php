@@ -14,6 +14,7 @@ class Ticket extends Model
 
     protected $fillable = [
         'customer_id',
+        'location_id',
         'device_id',
         'issue_description',
         'address',
@@ -55,6 +56,16 @@ class Ticket extends Model
     public function device(): BelongsTo
     {
         return $this->belongsTo(Device::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    public function dataRecoveryJob()
+    {
+        return $this->hasOne(DataRecoveryJob::class);
     }
 
     public function jobs(): HasMany
