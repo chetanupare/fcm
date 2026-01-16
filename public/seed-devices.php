@@ -8,15 +8,9 @@
  * 
  * Usage:
  * 1. Upload this file to your public directory
- * 2. Visit: https://aqua-falcon-493970.hostingersite.com/seed-devices.php?password=YOUR_PASSWORD
+ * 2. Visit: https://aqua-falcon-493970.hostingersite.com/seed-devices.php
  * 3. Delete this file after seeding completes
  */
-
-// Security check - change this password!
-$SEEDER_PASSWORD = 'CHANGE_THIS_PASSWORD_BEFORE_RUNNING';
-if (!isset($_GET['password']) || $_GET['password'] !== $SEEDER_PASSWORD) {
-    die('Access denied. Please provide the correct password in the URL: ?password=YOUR_PASSWORD');
-}
 
 // Bootstrap Laravel
 require __DIR__ . '/../vendor/autoload.php';
@@ -65,7 +59,7 @@ set_time_limit(600); // 10 minutes
             echo '<div class="error"><strong>❌ ERROR:</strong> Required database tables are missing!</div>';
             echo '<div class="warning">';
             echo '<strong>You must run migrations first!</strong><br>';
-            echo 'Please visit: <a href="migrate.php?password=YOUR_PASSWORD" target="_blank">migrate.php</a><br>';
+            echo 'Please visit: <a href="migrate.php" target="_blank">migrate.php</a><br>';
             echo 'Or run: <code>php artisan migrate</code> if you have terminal access.<br>';
             echo '</div>';
             echo '<div class="info">';

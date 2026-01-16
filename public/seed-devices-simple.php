@@ -39,7 +39,7 @@ try {
     if (!empty($missingTables)) {
         echo "\n❌ ERROR: Required database tables are missing!\n";
         echo "\n⚠️  You must run migrations first!\n";
-        echo "Visit: migrate.php?password=YOUR_PASSWORD\n";
+        echo "Visit: migrate.php\n";
         echo "Or run: php artisan migrate\n\n";
         echo "Required migrations:\n";
         echo "  - 2026_01_16_100000_create_device_types_table.php\n";

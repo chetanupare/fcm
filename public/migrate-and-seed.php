@@ -7,16 +7,9 @@
  * SECURITY: Delete this file after running!
  * 
  * Usage:
- * 1. Edit the password below
- * 2. Visit: https://aqua-falcon-493970.hostingersite.com/migrate-and-seed.php?password=YOUR_PASSWORD
- * 3. Delete this file after completion
+ * 1. Visit: https://aqua-falcon-493970.hostingersite.com/migrate-and-seed.php
+ * 2. Delete this file after completion
  */
-
-// Security check - change this password!
-$PASSWORD = 'CHANGE_THIS_PASSWORD_BEFORE_RUNNING';
-if (!isset($_GET['password']) || $_GET['password'] !== $PASSWORD) {
-    die('Access denied. Please provide the correct password in the URL: ?password=YOUR_PASSWORD');
-}
 
 // Bootstrap Laravel
 require __DIR__ . '/../vendor/autoload.php';
