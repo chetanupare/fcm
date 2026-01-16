@@ -79,3 +79,4 @@ try {
 }
 
 echo "\n=== Test Complete ===\n";
+echo "\n⚠️  SECURITY WARNING: Delete this file after testing!\n";
