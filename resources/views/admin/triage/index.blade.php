@@ -976,7 +976,7 @@
         
         // Hide loading and no recommendations messages
         const loadingContainer = document.querySelector('[x-show="loadingRecommendations"]');
-        const noRecommendationsContainer = document.querySelector('[x-show="!loadingRecommendations && recommendations && recommendations.length === 0"]');
+        const noRecommendationsContainer = document.getElementById('no-recommendations-message');
         
         if (loadingContainer) {
             loadingContainer.style.display = 'none';
@@ -986,6 +986,7 @@
         }
         
         if (recommendations.length === 0) {
+            // Show "no recommendations" message only after we've confirmed there are none
             if (noRecommendationsContainer) {
                 noRecommendationsContainer.style.display = 'block';
             }
