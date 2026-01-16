@@ -81,6 +81,9 @@ class BookingController extends Controller
             'customer_id' => $request->user()->id,
             'device_id' => $device->id,
             'issue_description' => $request->issue_description,
+            'address' => $request->address,
+            'preferred_date' => $request->preferred_date,
+            'preferred_time' => $request->preferred_time,
             'photos' => $photos,
         ]);
 

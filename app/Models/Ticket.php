@@ -16,6 +16,9 @@ class Ticket extends Model
         'customer_id',
         'device_id',
         'issue_description',
+        'address',
+        'preferred_date',
+        'preferred_time',
         'photos',
         'status',
         'priority',
@@ -28,6 +31,8 @@ class Ticket extends Model
     {
         return [
             'photos' => 'array',
+            'preferred_date' => 'date',
+            'preferred_time' => 'datetime',
             'triage_deadline_at' => 'datetime',
             'triage_handled_at' => 'datetime',
             'is_warranty' => 'boolean',

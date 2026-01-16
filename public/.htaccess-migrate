@@ -1,0 +1,12 @@
+# Add this to your .htaccess to protect migrate.php
+# Replace 'YOUR_SECURE_PASSWORD' with a strong password
+
+<Files "migrate.php">
+    AuthType Basic
+    AuthName "Migration Script - Enter Password"
+    AuthUserFile /home/u882721353/domains/aqua-falcon-493970.hostingersite.com/public_html/.htpasswd
+    Require valid-user
+</Files>
+
+# To create .htpasswd file, use: htpasswd -c .htpasswd admin
+# Or use an online htpasswd generator

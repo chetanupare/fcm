@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/settings/white-label', [SettingsController::class, 'getWhiteLabel']); // Public endpoint for color scheme
 
 // Webhooks (no auth required)
 Route::post('/webhooks/stripe', [WebhookController::class, 'stripe']);
