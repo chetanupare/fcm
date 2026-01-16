@@ -970,6 +970,95 @@
     };
 
     // Handle form submission with fetch for better UX
+    // Function to manually render recommendations when Alpine isn't available
+    function renderRecommendationsManually(recommendations) {
+        console.log('renderRecommendationsManually called with', recommendations.length, 'recommendations');
+        
+        // Hide loading and no recommendations messages
+        const loadingContainer = document.querySelector('[x-show="loadingRecommendations"]');
+        const noRecommendationsContainer = document.querySelector('[x-show="!loadingRecommendations && recommendations && recommendations.length === 0"]');
+        
+        if (loadingContainer) {
+            loadingContainer.style.display = 'none';
+        }
+        if (noRecommendationsContainer) {
+            noRecommendationsContainer.style.display = 'none';
+        }
+        
+        if (recommendations.length === 0) {
+            if (noRecommendationsContainer) {
+                noRecommendationsContainer.style.display = 'block';
+            }
+            return;
+        }
+        
+        // Find the recommendations container
+        const recommendationsSection = document.querySelector('[x-show="recommendations && recommendations.length > 0"]');
+        const recommendationsList = recommendationsSection ? recommendationsSection.querySelector('.space-y-2') : null;
+        
+        if (!recommendationsList) {
+            console.error('Recommendations list container not found');
+            return;
+        }
+        
+        // Show the recommendations container
+        if (recommendationsSection) {
+            recommendationsSection.style.display = 'block';
+        }
+        
+        // Clear existing content (keep template if it exists)
+        const template = recommendationsList.querySelector('template');
+        const existingItems = recommendationsList.querySelectorAll(':not(template)');
+        existingItems.forEach(item => item.remove());
+        
+        // Render each recommendation
+        recommendations.forEach((rec, index) => {
+            const recDiv = document.createElement('div');
+            recDiv.className = 'border rounded-lg p-3 cursor-pointer transition-all border-slate-200 hover:border-blue-300 hover:bg-slate-50';
+            recDiv.onclick = function() {
+                const select = document.getElementById('technician-select');
+                if (select) {
+                    select.value = rec.id;
+                    select.dispatchEvent(new Event('change'));
+                }
+            };
+            recDiv.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-slate-400">#${index + 1}</span>
+                            <span class="font-semibold text-slate-800">${rec.name || 'Unknown'}</span>
+                            ${rec.is_on_call ? '<span class="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">On-Call</span>' : ''}
+                        </div>
+                        <div class="mt-2 flex items-center gap-4 text-xs text-slate-600">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                                Skill: <span class="font-semibold">${(rec.skill_match_score * 100).toFixed(0)}%</span>
+                            </span>
+                            ${rec.distance_km ? `<span class="flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <span>${rec.distance_km.toFixed(1)} km</span>
+                                ${rec.estimated_duration_minutes ? `<span>(${rec.estimated_duration_minutes} min)</span>` : ''}
+                            </span>` : '<span class="text-slate-400">Distance: N/A</span>'}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-500 mb-1">Match Score</div>
+                        <div class="text-lg font-bold text-blue-600">${(rec.combined_score * 100).toFixed(0)}%</div>
+                    </div>
+                </div>
+            `;
+            recommendationsList.appendChild(recDiv);
+        });
+        
+        console.log('Recommendations rendered manually:', recommendations.length);
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded, setting up form handler');
         console.log('Alpine.js loaded:', typeof Alpine !== 'undefined');
