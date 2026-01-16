@@ -83,6 +83,9 @@ set_time_limit(300); // 5 minutes
             'component_usage_logs',
             'ratings',
             'activity_logs',
+            'device_types', // NEW: Device types table
+            'device_brands', // NEW: Device brands table
+            'device_models', // NEW: Device models table
             'cache',
             'cache_locks',
             'sessions',

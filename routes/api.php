@@ -14,12 +14,19 @@ use App\Http\Controllers\Api\Technician\InventoryController;
 use App\Http\Controllers\Api\Technician\ChecklistController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\DeviceController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/settings/white-label', [SettingsController::class, 'getWhiteLabel']); // Public endpoint for color scheme
+
+// Device data (public - no auth required)
+Route::get('/device-types', [DeviceController::class, 'getDeviceTypes']);
+Route::get('/device-brands', [DeviceController::class, 'getBrands']);
+Route::get('/device-models', [DeviceController::class, 'getModels']);
+Route::get('/devices/all', [DeviceController::class, 'getAll']); // Get all types, brands, models in one call
 
 // Webhooks (no auth required)
 Route::post('/webhooks/stripe', [WebhookController::class, 'stripe']);

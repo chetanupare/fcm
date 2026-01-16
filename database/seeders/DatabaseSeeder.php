@@ -110,6 +110,7 @@ class DatabaseSeeder extends Seeder
             ComponentCategorySeeder::class,
             ComponentBrandSeeder::class,
             ComponentSeeder::class,
+            DeviceDataSeeder::class, // Import device types, brands, and models from CSV
             DummyDataSeeder::class,
         ]);
     }
