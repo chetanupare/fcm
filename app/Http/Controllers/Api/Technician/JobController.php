@@ -472,9 +472,9 @@ class JobController extends Controller
     protected function getValidTransitions(string $currentStatus): array
     {
         $transitions = [
-            'offered' => ['accepted', 'en_route', 'component_pickup'],
-            'accepted' => ['en_route', 'component_pickup'],
-            'en_route' => ['component_pickup', 'arrived'],
+            'offered' => ['accepted', 'en_route'],
+            'accepted' => ['en_route', 'component_pickup', 'arrived'], // component_pickup is optional
+            'en_route' => ['component_pickup', 'arrived'], // component_pickup is optional
             'component_pickup' => ['arrived', 'en_route'],
             'arrived' => ['diagnosing', 'no_show'],
             'diagnosing' => ['quoted', 'waiting_parts', 'repairing', 'cannot_repair'],
