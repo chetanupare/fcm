@@ -55,6 +55,16 @@ class Job extends Model
         return $this->belongsTo(Quote::class);
     }
 
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    public function dataRecoveryJob(): HasOne
+    {
+        return $this->hasOne(DataRecoveryJob::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
