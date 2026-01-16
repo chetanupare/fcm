@@ -154,7 +154,7 @@
                     Cancel
                 </button>
                 <button type="submit" id="assign-submit-btn"
-                        onclick="console.log('Submit button clicked'); return true;"
+                        onclick="console.log('Submit button clicked'); event.preventDefault(); handleAssignSubmit(event); return false;"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md">
                     Assign Now
                 </button>
@@ -235,6 +235,96 @@
         } else {
             console.error('Form elements not found');
         }
+    };
+
+    // Handle form submission directly
+    window.handleAssignSubmit = function(event) {
+        console.log('handleAssignSubmit called');
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const form = document.getElementById('assign-form');
+        if (!form) {
+            console.error('Form not found');
+            alert('Form not found. Please refresh the page.');
+            return;
+        }
+        
+        const formData = new FormData(form);
+        const ticketId = form.querySelector('#ticket-id-input')?.value || 
+                        form.querySelector('input[name="ticket_id"]')?.value ||
+                        window.currentTicketId;
+        const technicianId = form.querySelector('select[name="technician_id"]')?.value;
+        const csrfToken = form.querySelector('input[name="_token"]')?.value ||
+                         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        console.log('Form data:', { ticketId, technicianId, hasCsrf: !!csrfToken });
+        
+        if (!ticketId) {
+            alert('Error: Ticket ID not found. Please refresh and try again.');
+            console.error('Ticket ID missing');
+            return;
+        }
+        
+        if (!technicianId) {
+            alert('Please select a technician');
+            return;
+        }
+        
+        if (!csrfToken) {
+            alert('CSRF token not found. Please refresh the page.');
+            console.error('CSRF token missing');
+            return;
+        }
+        
+        const submitBtn = form.querySelector('#assign-submit-btn');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Assigning...';
+        
+        fetch(`/admin/triage/${ticketId}/assign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                technician_id: parseInt(technicianId),
+                _token: csrfToken
+            })
+        })
+        .then(response => {
+            console.log('Response received:', response.status, response.statusText);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                if (response.ok) {
+                    return response.json().catch(() => ({ message: 'Success' }));
+                }
+                return response.json().then(err => {
+                    console.error('Error response:', err);
+                    return Promise.reject(err);
+                });
+            } else {
+                if (response.ok || response.redirected) {
+                    return { message: 'Success', redirect: true };
+                }
+                throw new Error('Request failed with status: ' + response.status);
+            }
+        })
+        .then(data => {
+            console.log('Success:', data);
+            alert(data.message || 'Ticket assigned successfully!');
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            const errorMsg = error.message || error.error || 'Failed to assign ticket. Please try again.';
+            alert(errorMsg);
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
     };
 
     // Handle form submission with fetch for better UX
