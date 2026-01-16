@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use App\Models\Technician;
 use App\Services\Workflow\AutoAssignService;
+use App\Services\Workflow\SlaTrackingService;
 use Illuminate\Http\Request;
 
 /**
@@ -68,6 +69,10 @@ class TriageController extends Controller
                 'message' => 'Failed to assign technician',
             ], 500);
         }
+
+        // Update SLA tracking
+        $slaTrackingService = app(SlaTrackingService::class);
+        $slaTrackingService->updateSlaStatus($ticket);
 
         return response()->json([
             'message' => 'Ticket assigned successfully',

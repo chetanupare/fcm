@@ -259,18 +259,75 @@ class JobController extends Controller
             $this->handleCannotRepair($job);
         }
 
-        // Send notification to customer about status change
+        // Send notification to customer about status change with ETA
         $customer = $job->ticket->customer;
         if ($customer && in_array($request->status, ['en_route', 'arrived', 'diagnosing', 'repairing', 'quality_check', 'completed'])) {
-            $customer->notify(new \App\Notifications\JobStatusNotification(
-                $job->fresh(),
-                $request->status
-            ));
+            $notificationService = app(\App\Services\Notification\MultiChannelNotificationService::class);
+            
+            $notificationData = [
+                'job_id' => $job->id,
+                'ticket_id' => $job->ticket_id,
+                'status' => $request->status,
+            ];
+            
+            // Add ETA if technician is en route
+            if ($request->status === 'en_route' && $job->technician) {
+                $etaService = app(\App\Services\Location\EtaCalculationService::class);
+                $eta = $etaService->calculateEta($job->technician, $job);
+                if ($eta) {
+                    $notificationData['eta_text'] = $eta['eta_text'];
+                    $notificationData['arrival_window'] = $eta['arrival_window_text'];
+                    $notificationData['distance_km'] = $eta['distance_km'];
+                }
+            }
+            
+            $notificationType = match($request->status) {
+                'en_route' => 'technician_en_route',
+                'arrived' => 'technician_arrived',
+                'quoted' => 'quote_ready',
+                'completed' => 'service_complete',
+                default => 'status_update',
+            };
+            
+            $notificationTitle = match($request->status) {
+                'en_route' => 'Technician On The Way',
+                'arrived' => 'Technician Has Arrived',
+                'quoted' => 'Quote Ready for Review',
+                'completed' => 'Service Complete',
+                default => 'Service Status Update',
+            };
+            
+            $notificationService->send(
+                $customer,
+                $notificationType,
+                $notificationTitle,
+                $this->getStatusMessage($request->status, $notificationData),
+                $notificationData
+            );
+        }
+
+        // Schedule payment reminders when job is completed
+        if ($request->status === 'completed' && $job->quote) {
+            $this->schedulePaymentReminders($job);
         }
 
         return response()->json([
             'job' => $job->fresh(),
         ]);
+    }
+
+    protected function getStatusMessage(string $status, array $data = []): string
+    {
+        return match($status) {
+            'en_route' => 'Your technician is on the way' . (isset($data['eta_text']) ? " (ETA: {$data['eta_text']})" : ''),
+            'arrived' => 'Your technician has arrived at your location',
+            'diagnosing' => 'Technician is diagnosing the issue',
+            'quoted' => 'Quote is ready for your review',
+            'repairing' => 'Technician is working on the repair',
+            'quality_check' => 'Technician is performing quality check',
+            'completed' => 'Service has been completed successfully',
+            default => 'Service status has been updated',
+        };
     }
 
     public function uploadAfterPhoto(Request $request, int $id)
@@ -390,23 +447,14 @@ class JobController extends Controller
             'status' => in_array($request->method, ['cash', 'cod']) ? 'completed' : 'pending',
         ]);
 
-        $job->update([
-            'payment_received_at' => now(),
-            'status' => 'completed',
-        ]);
-
-        // Only release technician for cash/cod payments
-        // Online payments will release via webhook
+        // Update payment status for cash/cod (already completed)
         if (in_array($request->method, ['cash', 'cod'])) {
-            $releaseService = app(\App\Services\Workflow\ReleaseService::class);
-            $releaseService->releaseTechnician($job);
+            $payment->update(['status' => 'completed']);
         }
 
-        // Send notification to customer
-        $customer = $job->ticket->customer;
-        if ($customer) {
-            $customer->notify(new \App\Notifications\PaymentReceivedNotification($payment));
-        }
+        // Automatic job closure
+        $closureService = app(\App\Services\Workflow\AutomaticJobClosureService::class);
+        $closureService->handlePaymentConfirmation($payment->fresh());
 
         return response()->json([
             'message' => 'Payment recorded successfully',
@@ -470,5 +518,39 @@ class JobController extends Controller
         $job->update(['status' => 'completed']);
         $releaseService = app(\App\Services\Workflow\ReleaseService::class);
         $releaseService->releaseTechnician($job);
+    }
+
+    protected function schedulePaymentReminders(Job $job): void
+    {
+        // Only schedule reminders if job has a quote and no payment has been recorded yet
+        if (!$job->quote) {
+            return;
+        }
+
+        // Check if payment already exists
+        $hasPayment = \App\Models\Payment::where('job_id', $job->id)
+            ->where('status', 'completed')
+            ->exists();
+
+        if ($hasPayment) {
+            return;
+        }
+
+        // Schedule payment reminders
+        // Immediate reminder when service completes (5 minutes delay)
+        \App\Jobs\SendPaymentReminderJob::dispatch($job, 'service_complete')
+            ->delay(now()->addMinutes(5));
+        
+        // 24 hours reminder
+        \App\Jobs\SendPaymentReminderJob::dispatch($job, '24_hours')
+            ->delay(now()->addHours(24));
+        
+        // 48 hours reminder
+        \App\Jobs\SendPaymentReminderJob::dispatch($job, '48_hours')
+            ->delay(now()->addHours(48));
+        
+        // 7 days reminder
+        \App\Jobs\SendPaymentReminderJob::dispatch($job, '7_days')
+            ->delay(now()->addDays(7));
     }
 }

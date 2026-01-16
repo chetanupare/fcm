@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Technician;
 
 use App\Http\Controllers\Controller;
+use App\Services\Location\LocationTrackingService;
 use Illuminate\Http\Request;
 
 /**
@@ -12,6 +13,13 @@ use Illuminate\Http\Request;
  */
 class StatusController extends Controller
 {
+    protected LocationTrackingService $locationTrackingService;
+
+    public function __construct(LocationTrackingService $locationTrackingService)
+    {
+        $this->locationTrackingService = $locationTrackingService;
+    }
+
     public function index(Request $request)
     {
         $technician = $request->user()->technician;
@@ -56,15 +64,19 @@ class StatusController extends Controller
         $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
+            'source' => 'nullable|in:manual,gps,api',
         ]);
 
         $technician = $request->user()->technician;
         
-        $technician->update([
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'last_location_update' => now(),
-        ]);
+        // Record location update using service
+        $this->locationTrackingService->recordLocationUpdate(
+            $technician,
+            $request->latitude,
+            $request->longitude,
+            $request->source ?? 'manual',
+            $request->has('metadata') ? $request->metadata : null
+        );
 
         return response()->json([
             'message' => 'Location updated',

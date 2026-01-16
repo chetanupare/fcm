@@ -4,7 +4,13 @@
 @section('page-title', 'Triage Queue')
 
 @section('content')
-<div class="space-y-6" x-data="{ assignModalOpen: false, selectedTicket: null }">
+<div class="space-y-6" x-data="{ 
+    assignModalOpen: false, 
+    selectedTicket: null,
+    recommendations: [],
+    loadingRecommendations: false,
+    selectedTechnician: null
+}">
     <!-- Header with Stats -->
     <div class="flex items-center justify-between">
         <div>
@@ -235,7 +241,7 @@
     @endif
 </div>
 
-<!-- Assign Modal - Glassmorphic -->
+<!-- Assign Modal - Enhanced with Recommendations -->
 <div x-show="assignModalOpen" 
      x-cloak
      x-transition:enter="transition ease-out duration-300"
@@ -246,7 +252,7 @@
      x-transition:leave-end="opacity-0"
      @click.away="assignModalOpen = false"
      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div @click.stop class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all ticket-enter">
+    <div @click.stop class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 transform transition-all ticket-enter max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl font-bold text-slate-800">Assign Technician</h3>
             <button @click="assignModalOpen = false" class="text-slate-400 hover:text-slate-600">
@@ -255,19 +261,82 @@
                 </svg>
             </button>
         </div>
+        
+        <!-- Recommended Technicians -->
+        <div x-show="recommendations && recommendations.length > 0" class="mb-6">
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Recommended Technicians (Top Matches)
+            </h4>
+            <div class="space-y-2">
+                <template x-for="(rec, index) in recommendations" :key="rec.id">
+                    <div @click="selectedTechnician = rec.id; document.getElementById('technician-select').value = rec.id"
+                         :class="selectedTechnician === rec.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'"
+                         class="border rounded-lg p-3 cursor-pointer transition-all">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-bold text-slate-400" x-text="'#' + (index + 1)"></span>
+                                    <span class="font-semibold text-slate-800" x-text="rec.name"></span>
+                                    <span x-show="rec.is_on_call" class="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">On-Call</span>
+                                </div>
+                                <div class="flex items-center gap-4 mt-2 text-xs text-slate-600">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                        </svg>
+                                        Skill: <span class="font-semibold" x-text="rec.skill_match_score + '%'"></span>
+                                    </span>
+                                    <span x-show="rec.distance_km !== null" class="flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        <span x-text="rec.distance_km + ' km'"></span>
+                                        <span x-show="rec.estimated_duration_minutes" x-text="'(' + rec.estimated_duration_minutes + ' min)'"></span>
+                                    </span>
+                                    <span x-show="rec.distance_km === null" class="text-slate-400">Distance: N/A</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-500 mb-1">Match Score</div>
+                                <div class="text-lg font-bold text-blue-600" x-text="rec.combined_score + '%'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div x-show="loadingRecommendations" class="mb-6 text-center py-4">
+            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p class="text-sm text-slate-500 mt-2">Loading recommendations...</p>
+        </div>
+        
         <form method="POST" id="assign-form" action="" data-base-url="/admin/triage">
             @csrf
             <input type="hidden" name="ticket_id" id="ticket-id-input" value="">
             <div class="mb-6">
                 <label class="block text-sm font-medium text-slate-700 mb-2">Select Technician</label>
                 <select name="technician_id" id="technician-select" required 
+                        x-model="selectedTechnician"
+                        @change="selectedTechnician = $event.target.value"
                         class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                     <option value="">Choose a technician...</option>
                     @foreach($technicians as $tech)
                         @if($tech['available'])
-                            <option value="{{ $tech['id'] }}">{{ $tech['name'] }} (Available)</option>
+                            <option value="{{ $tech['id'] }}">
+                                {{ $tech['name'] }} 
+                                @if($tech['is_on_call']) (On-Call) @endif
+                                (Available)
+                            </option>
                         @else
-                            <option value="{{ $tech['id'] }}" disabled>{{ $tech['name'] }} ({{ $tech['active_jobs'] }} active jobs)</option>
+                            <option value="{{ $tech['id'] }}" disabled>
+                                {{ $tech['name'] }} ({{ $tech['active_jobs'] }} active jobs)
+                            </option>
                         @endif
                     @endforeach
                 </select>
@@ -357,7 +426,13 @@
         if (alpineComponent) {
             alpineComponent.$data.selectedTicket = ticketId;
             alpineComponent.$data.assignModalOpen = true;
+            alpineComponent.$data.selectedTechnician = null;
             console.log('Modal state:', { assignModalOpen: alpineComponent.$data.assignModalOpen, selectedTicket: alpineComponent.$data.selectedTicket });
+            
+            // Load recommendations
+            if (ticketId) {
+                loadRecommendations(ticketId, alpineComponent);
+            }
         }
         
         window.currentTicketId = ticketId;
@@ -403,6 +478,28 @@
         }
     };
 
+    // Function to load recommendations for a ticket
+    function loadRecommendations(ticketId, alpineComponent) {
+        if (!alpineComponent) {
+            alpineComponent = document.querySelector('[x-data]')?.__x;
+        }
+        if (!alpineComponent) return;
+        
+        alpineComponent.$data.loadingRecommendations = true;
+        alpineComponent.$data.recommendations = [];
+        
+        fetch(`/admin/triage/${ticketId}/recommendations`)
+            .then(response => response.json())
+            .then(data => {
+                alpineComponent.$data.recommendations = data.recommendations || [];
+                alpineComponent.$data.loadingRecommendations = false;
+            })
+            .catch(error => {
+                console.error('Error loading recommendations:', error);
+                alpineComponent.$data.loadingRecommendations = false;
+            });
+    }
+
     // Function to update form when ticket is selected
     window.updateAssignForm = function(ticketId) {
         console.log('Updating form for ticket:', ticketId);
@@ -415,6 +512,9 @@
         } else {
             console.error('Form elements not found');
         }
+        
+        // Load recommendations
+        loadRecommendations(ticketId);
     };
 
     // Handle form submission directly - define early

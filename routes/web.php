@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TriageController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\TechnicianController;
+use App\Http\Controllers\Admin\SlaDashboardController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\ComponentController;
@@ -33,8 +34,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     
     // Triage Management
     Route::get('/triage', [TriageController::class, 'index'])->name('triage.index');
+    Route::get('/triage/{ticketId}/recommendations', [TriageController::class, 'getRecommendedTechnicians'])->name('triage.recommendations');
     Route::post('/triage/{ticketId}/assign', [TriageController::class, 'assign'])->name('triage.assign');
     Route::post('/triage/{ticketId}/reject', [TriageController::class, 'reject'])->name('triage.reject');
+    
+    // SLA Dashboard
+    Route::get('/sla', [SlaDashboardController::class, 'index'])->name('sla.dashboard');
     
     // Service Catalog
     Route::resource('services', ServiceController::class);
@@ -42,6 +47,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Technicians
     Route::get('/technicians', [TechnicianController::class, 'index'])->name('technicians.index');
     Route::get('/technicians/map', [TechnicianController::class, 'map'])->name('technicians.map');
+    Route::get('/technicians/skills', [TechnicianController::class, 'skills'])->name('technicians.skills');
     Route::get('/technicians/{id}/revenue', [TechnicianController::class, 'revenue'])->name('technicians.revenue');
     
     // Customers Management
@@ -70,6 +76,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
            Route::get('/reports/technician', [\App\Http\Controllers\Admin\ReportController::class, 'technician'])->name('reports.technician');
            Route::get('/reports/component', [\App\Http\Controllers\Admin\ReportController::class, 'component'])->name('reports.component');
            Route::get('/reports/customer', [\App\Http\Controllers\Admin\ReportController::class, 'customer'])->name('reports.customer');
+           
+           // Reconciliation
+           Route::get('/reconciliation', [\App\Http\Controllers\Admin\ReconciliationController::class, 'index'])->name('reconciliation.index');
            
            // Exports
            Route::get('/export/customers', [\App\Http\Controllers\Admin\ExportController::class, 'customers'])->name('export.customers');

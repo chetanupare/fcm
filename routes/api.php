@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Customer\TrackingController;
 use App\Http\Controllers\Api\Admin\TriageController;
 use App\Http\Controllers\Api\Admin\ServiceCatalogController;
 use App\Http\Controllers\Api\Admin\TechnicianController;
+use App\Http\Controllers\Api\Admin\TechnicianSkillController;
 use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\AmcController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\Api\Admin\IntegrationController;
 use App\Http\Controllers\Api\Admin\BrandingController;
 use App\Http\Controllers\Api\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\Admin\DeviceImageController;
+use App\Http\Controllers\Api\Admin\ReconciliationController;
 use App\Http\Controllers\Api\Customer\ServiceHistoryController;
 use App\Http\Controllers\Api\Technician\JobController as TechnicianJobController;
 use App\Http\Controllers\Api\Technician\StatusController;
@@ -118,6 +120,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/technicians', [TechnicianController::class, 'index']);
         Route::get('/technicians/{id}/revenue', [TechnicianController::class, 'revenue']);
         Route::get('/map', [TechnicianController::class, 'map']);
+        Route::put('/technicians/{id}/on-call', [TechnicianController::class, 'updateOnCallStatus']);
+        Route::get('/technicians/on-call', [TechnicianController::class, 'getOnCallTechnicians']);
+        
+        // Technician Skill Management
+        Route::get('/technicians/{technicianId}/skills', [TechnicianSkillController::class, 'index']);
+        Route::post('/technicians/{technicianId}/skills', [TechnicianSkillController::class, 'store']);
+        Route::put('/technicians/{technicianId}/skills/{skillId}', [TechnicianSkillController::class, 'update']);
+        Route::delete('/technicians/{technicianId}/skills/{skillId}', [TechnicianSkillController::class, 'destroy']);
+        Route::get('/technician-skills/device-types', [TechnicianSkillController::class, 'availableDeviceTypes']);
+        Route::get('/technician-skills/match-scores/{ticketId}', [TechnicianSkillController::class, 'getMatchScores']);
         
         Route::get('/settings/white-label', [SettingsController::class, 'getWhiteLabel']);
         Route::put('/settings/white-label', [SettingsController::class, 'updateWhiteLabel']);
@@ -249,6 +261,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/inventory/{id}/adjust', [AdminInventoryController::class, 'adjustStock']);
         Route::get('/inventory/reorder-alerts', [AdminInventoryController::class, 'getReorderAlerts']);
         Route::post('/inventory/scan', [AdminInventoryController::class, 'scanBarcode']);
+        
+        // Payment Reconciliation
+        Route::get('/reconciliation/daily', [ReconciliationController::class, 'daily']);
+        Route::get('/reconciliation/unmatched', [ReconciliationController::class, 'unmatchedPayments']);
         
         // Device Images
         Route::post('/tickets/{ticketId}/device-images', [DeviceImageController::class, 'upload']);

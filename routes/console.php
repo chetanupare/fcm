@@ -73,3 +73,8 @@ Schedule::call(function () {
     // Process payment timeouts (awaiting payment timeout)
     \App\Jobs\ProcessPaymentTimeout::dispatch();
 })->hourly();
+
+Schedule::call(function () {
+    // Schedule payment reminders for outstanding payments
+    \App\Jobs\SchedulePaymentRemindersJob::dispatch();
+})->dailyAt('09:00');

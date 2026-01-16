@@ -151,12 +151,50 @@
                         </svg>
                         Live Map
                     </a>
+                    <a href="{{ route('admin.technicians.skills') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {{ request()->routeIs('admin.technicians.skills') ? 'bg-blue-50 text-blue-700 font-medium shadow-sm shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        </svg>
+                        Technician Skills
+                    </a>
+                    <a href="{{ route('admin.sla.dashboard') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {{ request()->routeIs('admin.sla.*') ? 'bg-blue-50 text-blue-700 font-medium shadow-sm shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        SLA Dashboard
+                        @if(request()->routeIs('admin.sla.*'))
+                            @php
+                                $atRiskCount = \App\Models\TicketSlaTracking::whereHas('ticket', function($q) {
+                                    $q->whereNotIn('status', ['completed', 'cancelled', 'closed']);
+                                })->where(function($q) {
+                                    $q->where('triage_status', 'at_risk')->orWhere('triage_status', 'breached')
+                                      ->orWhere('assignment_status', 'at_risk')->orWhere('assignment_status', 'breached')
+                                      ->orWhere('response_status', 'at_risk')->orWhere('response_status', 'breached')
+                                      ->orWhere('resolution_status', 'at_risk')->orWhere('resolution_status', 'breached');
+                                })->count();
+                            @endphp
+                            @if($atRiskCount > 0)
+                                <span class="ml-auto bg-red-100 text-red-700 py-0.5 px-2 rounded-md text-xs font-semibold">
+                                    {{ $atRiskCount }}
+                                </span>
+                            @endif
+                        @endif
+                    </a>
                     <a href="{{ route('admin.reports.index') }}" 
                        class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {{ request()->routeIs('admin.reports.*') ? 'bg-blue-50 text-blue-700 font-medium shadow-sm shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                         Reports
+                    </a>
+                    <a href="{{ route('admin.reconciliation.index') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {{ request()->routeIs('admin.reconciliation.*') ? 'bg-blue-50 text-blue-700 font-medium shadow-sm shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                        Reconciliation
                     </a>
                     <a href="{{ route('admin.settings.index') }}" 
                        class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {{ request()->routeIs('admin.settings.*') ? 'bg-blue-50 text-blue-700 font-medium shadow-sm shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900' }}">

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use App\Models\Technician;
 use App\Services\Workflow\AutoAssignService;
+use App\Services\Workflow\SkillMatchingService;
+use App\Services\Location\DistanceCalculationService;
 use Illuminate\Http\Request;
 
 class TriageController extends Controller
@@ -13,7 +15,7 @@ class TriageController extends Controller
     public function index()
     {
         $tickets = Ticket::whereIn('status', ['pending_triage', 'triage'])
-            ->with(['customer', 'device'])
+            ->with(['customer', 'device.deviceType'])
             ->orderBy('priority', 'desc')
             ->orderBy('created_at', 'asc')
             ->get()
@@ -26,13 +28,15 @@ class TriageController extends Controller
                     'id' => $ticket->id,
                     'customer' => $ticket->customer->name,
                     'device' => $ticket->device->brand . ' ' . $ticket->device->device_type,
+                    'device_type_id' => $ticket->device->device_type_id,
                     'issue' => $ticket->issue_description,
                     'status' => $ticket->status,
                     'priority' => $ticket->priority,
                     'countdown' => $countdown,
                     'countdown_formatted' => gmdate('i:s', $countdown),
-                    'triage_deadline_at' => $ticket->triage_deadline_at?->toIso8601String(), // ISO format for JavaScript
+                    'triage_deadline_at' => $ticket->triage_deadline_at?->toIso8601String(),
                     'created_at' => $ticket->created_at->format('Y-m-d H:i'),
+                    'has_location' => $ticket->latitude && $ticket->longitude,
                 ];
             });
 
@@ -52,12 +56,14 @@ class TriageController extends Controller
                     'priority' => $ticket->priority,
                     'technician' => $job && $job->technician ? $job->technician->user->name : 'Unassigned',
                     'job_status' => $job ? $job->status : null,
+                    'distance_km' => $job ? $job->distance_km : null,
+                    'estimated_duration' => $job ? $job->estimated_duration_minutes : null,
                     'assigned_at' => $job ? $job->created_at->format('Y-m-d H:i') : null,
                     'created_at' => $ticket->created_at->format('Y-m-d H:i'),
                 ];
             });
 
-        $technicians = Technician::with('user')
+        $technicians = Technician::with(['user', 'skills.deviceType'])
             ->where('status', 'on_duty')
             ->get()
             ->map(function ($tech) {
@@ -66,10 +72,61 @@ class TriageController extends Controller
                     'name' => $tech->user->name,
                     'active_jobs' => $tech->active_jobs_count,
                     'available' => $tech->isAvailable(),
+                    'is_on_call' => $tech->is_on_call ?? false,
+                    'has_location' => $tech->latitude && $tech->longitude,
                 ];
             });
 
         return view('admin.triage.index', compact('tickets', 'assignedTickets', 'technicians'));
+    }
+
+    /**
+     * Get recommended technicians for a ticket (with distance and skill scores)
+     */
+    public function getRecommendedTechnicians(int $ticketId)
+    {
+        $ticket = Ticket::with('device.deviceType')->findOrFail($ticketId);
+        
+        $technicians = Technician::where('status', 'on_duty')
+            ->where('active_jobs_count', 0)
+            ->with(['user', 'skills.deviceType'])
+            ->get();
+
+        $skillMatchingService = app(SkillMatchingService::class);
+        $distanceService = app(DistanceCalculationService::class);
+
+        $recommendations = $technicians->map(function ($technician) use ($ticket, $skillMatchingService, $distanceService) {
+            // Calculate skill match score
+            $skillScore = $skillMatchingService->calculateMatchScore($technician, $ticket);
+            
+            // Calculate distance
+            $distanceData = $distanceService->calculateTechnicianToTicketDistance($technician, $ticket);
+            
+            // Combined score
+            $combinedScore = 0;
+            if ($distanceData && $distanceData['distance_km'] !== null) {
+                $maxDistance = 50;
+                $distanceScore = max(0, 100 - (($distanceData['distance_km'] / $maxDistance) * 100));
+                $combinedScore = ($skillScore * 0.6) + ($distanceScore * 0.4);
+            } else {
+                $combinedScore = $skillScore * 0.6;
+            }
+
+            return [
+                'id' => $technician->id,
+                'name' => $technician->user->name,
+                'skill_match_score' => round($skillScore, 1),
+                'distance_km' => $distanceData ? round($distanceData['distance_km'], 2) : null,
+                'estimated_duration_minutes' => $distanceData ? round($distanceData['duration_minutes'], 1) : null,
+                'combined_score' => round($combinedScore, 1),
+                'has_location' => $technician->latitude && $technician->longitude,
+                'is_on_call' => $technician->is_on_call ?? false,
+            ];
+        })->sortByDesc('combined_score')->take(5)->values();
+
+        return response()->json([
+            'recommendations' => $recommendations,
+        ]);
     }
 
     public function assign(Request $request, int $ticketId)
@@ -101,6 +158,10 @@ class TriageController extends Controller
             }
             return back()->withErrors(['error' => 'Failed to assign technician']);
         }
+
+        // Update SLA tracking
+        $slaTrackingService = app(\App\Services\Workflow\SlaTrackingService::class);
+        $slaTrackingService->updateSlaStatus($ticket);
 
         if ($request->expectsJson()) {
             return response()->json([

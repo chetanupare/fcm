@@ -5,10 +5,18 @@ namespace App\Services\Workflow;
 use App\Models\Ticket;
 use App\Models\Setting;
 use App\Jobs\ProcessTriageTimeout;
+use App\Services\Workflow\SlaTrackingService;
 use Carbon\Carbon;
 
 class TriageService
 {
+    protected SlaTrackingService $slaTrackingService;
+
+    public function __construct(SlaTrackingService $slaTrackingService)
+    {
+        $this->slaTrackingService = $slaTrackingService;
+    }
+
     public function createTicket(array $data): Ticket
     {
         $triageTimeout = Setting::get('triage_timeout_minutes', 5) ?? 5;
@@ -24,9 +32,12 @@ class TriageService
             'preferred_time' => $data['preferred_time'] ?? null,
             'photos' => $data['photos'] ?? [],
             'status' => 'pending_triage',
-            'priority' => 'normal',
+            'priority' => $data['priority'] ?? 'normal',
             'triage_deadline_at' => now()->addMinutes($triageTimeout),
         ]);
+
+        // Initialize SLA tracking
+        $this->slaTrackingService->initializeSlaTracking($ticket);
 
         // Dispatch job to handle timeout
         ProcessTriageTimeout::dispatch($ticket->id)

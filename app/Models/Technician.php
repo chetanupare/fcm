@@ -15,6 +15,7 @@ class Technician extends Model
         'location_id',
         'user_id',
         'status',
+        'is_on_call',
         'active_jobs_count',
         'latitude',
         'longitude',
@@ -26,6 +27,7 @@ class Technician extends Model
     protected function casts(): array
     {
         return [
+            'is_on_call' => 'boolean',
             'active_jobs_count' => 'integer',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
@@ -68,5 +70,46 @@ class Technician extends Model
     public function decrementActiveJobs(): void
     {
         $this->decrement('active_jobs_count');
+    }
+
+    public function locationHistory(): HasMany
+    {
+        return $this->hasMany(TechnicianLocationHistory::class);
+    }
+
+    public function skills(): HasMany
+    {
+        return $this->hasMany(TechnicianSkill::class)->where('is_active', true);
+    }
+
+    public function allSkills(): HasMany
+    {
+        return $this->hasMany(TechnicianSkill::class);
+    }
+
+    public function primarySkills(): HasMany
+    {
+        return $this->hasMany(TechnicianSkill::class)
+            ->where('is_active', true)
+            ->where('is_primary', true);
+    }
+
+    public function hasSkillForDeviceType(int $deviceTypeId, ?string $complexityLevel = null): bool
+    {
+        $query = $this->skills()->where('device_type_id', $deviceTypeId);
+
+        if ($complexityLevel) {
+            $query->where('complexity_level', $complexityLevel);
+        }
+
+        return $query->exists();
+    }
+
+    public function getSkillForDeviceType(int $deviceTypeId): ?TechnicianSkill
+    {
+        return $this->skills()
+            ->where('device_type_id', $deviceTypeId)
+            ->orderBy('complexity_level', 'desc')
+            ->first();
     }
 }

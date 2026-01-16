@@ -36,19 +36,11 @@ class WebhookController extends Controller
                 ]);
 
                 if ($status === 'succeeded') {
-                    $payment->job->update([
-                        'payment_received_at' => now(),
-                        'status' => 'completed',
-                    ]);
+                    $payment->update(['status' => 'completed']);
                     
-                    $releaseService = app(\App\Services\Workflow\ReleaseService::class);
-                    $releaseService->releaseTechnician($payment->job);
-                    
-                    // Send notification to customer
-                    $customer = $payment->job->ticket->customer;
-                    if ($customer) {
-                        $customer->notify(new \App\Notifications\PaymentReceivedNotification($payment->fresh()));
-                    }
+                    // Automatic job closure
+                    $closureService = app(\App\Services\Workflow\AutomaticJobClosureService::class);
+                    $closureService->handlePaymentConfirmation($payment->fresh());
                 }
             }
         }
@@ -91,19 +83,11 @@ class WebhookController extends Controller
                     'gateway_response' => $payload,
                 ]);
 
-                $payment->job->update([
-                    'payment_received_at' => now(),
-                    'status' => 'completed',
-                ]);
+                $payment->update(['status' => 'completed']);
                 
-                $releaseService = app(\App\Services\Workflow\ReleaseService::class);
-                $releaseService->releaseTechnician($payment->job);
-                
-                // Send notification to customer
-                $customer = $payment->job->ticket->customer;
-                if ($customer) {
-                    $customer->notify(new \App\Notifications\PaymentReceivedNotification($payment->fresh()));
-                }
+                // Automatic job closure
+                $closureService = app(\App\Services\Workflow\AutomaticJobClosureService::class);
+                $closureService->handlePaymentConfirmation($payment->fresh());
             }
         }
 
@@ -133,19 +117,11 @@ class WebhookController extends Controller
                     'gateway_response' => $responseData,
                 ]);
 
-                $payment->job->update([
-                    'payment_received_at' => now(),
-                    'status' => 'completed',
-                ]);
+                $payment->update(['status' => 'completed']);
                 
-                $releaseService = app(\App\Services\Workflow\ReleaseService::class);
-                $releaseService->releaseTechnician($payment->job);
-                
-                // Send notification to customer
-                $customer = $payment->job->ticket->customer;
-                if ($customer) {
-                    $customer->notify(new \App\Notifications\PaymentReceivedNotification($payment->fresh()));
-                }
+                // Automatic job closure
+                $closureService = app(\App\Services\Workflow\AutomaticJobClosureService::class);
+                $closureService->handlePaymentConfirmation($payment->fresh());
             }
         }
 
@@ -174,19 +150,11 @@ class WebhookController extends Controller
                     'gateway_response' => $payload,
                 ]);
 
-                $payment->job->update([
-                    'payment_received_at' => now(),
-                    'status' => 'completed',
-                ]);
+                $payment->update(['status' => 'completed']);
                 
-                $releaseService = app(\App\Services\Workflow\ReleaseService::class);
-                $releaseService->releaseTechnician($payment->job);
-                
-                // Send notification to customer
-                $customer = $payment->job->ticket->customer;
-                if ($customer) {
-                    $customer->notify(new \App\Notifications\PaymentReceivedNotification($payment->fresh()));
-                }
+                // Automatic job closure
+                $closureService = app(\App\Services\Workflow\AutomaticJobClosureService::class);
+                $closureService->handlePaymentConfirmation($payment->fresh());
             }
         }
 

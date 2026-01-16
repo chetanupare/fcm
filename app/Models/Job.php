@@ -19,6 +19,8 @@ class Job extends Model
         'ticket_id',
         'technician_id',
         'status',
+        'distance_km',
+        'estimated_duration_minutes',
         'offer_deadline_at',
         'offer_accepted_at',
         'quote_id',
@@ -32,6 +34,8 @@ class Job extends Model
     protected function casts(): array
     {
         return [
+            'distance_km' => 'decimal:2',
+            'estimated_duration_minutes' => 'integer',
             'offer_deadline_at' => 'datetime',
             'offer_accepted_at' => 'datetime',
             'contract_signed_at' => 'datetime',

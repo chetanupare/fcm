@@ -86,4 +86,54 @@ class TechnicianController extends Controller
             'technicians' => $technicians,
         ]);
     }
+
+    /**
+     * Update technician on-call status
+     */
+    public function updateOnCallStatus(Request $request, int $id)
+    {
+        $request->validate([
+            'is_on_call' => 'required|boolean',
+        ]);
+
+        $technician = Technician::findOrFail($id);
+        $technician->update([
+            'is_on_call' => $request->is_on_call,
+        ]);
+
+        return response()->json([
+            'message' => 'On-call status updated',
+            'technician' => [
+                'id' => $technician->id,
+                'name' => $technician->user->name,
+                'is_on_call' => $technician->is_on_call,
+            ],
+        ]);
+    }
+
+    /**
+     * Get all on-call technicians
+     */
+    public function getOnCallTechnicians()
+    {
+        $technicians = Technician::where('is_on_call', true)
+            ->where('status', 'on_duty')
+            ->with('user')
+            ->get()
+            ->map(function ($tech) {
+                return [
+                    'id' => $tech->id,
+                    'name' => $tech->user->name,
+                    'email' => $tech->user->email,
+                    'phone' => $tech->user->phone,
+                    'status' => $tech->status,
+                    'active_jobs_count' => $tech->active_jobs_count,
+                    'is_on_call' => $tech->is_on_call,
+                ];
+            });
+
+        return response()->json([
+            'on_call_technicians' => $technicians,
+        ]);
+    }
 }

@@ -70,4 +70,12 @@ class TechnicianController extends Controller
 
         return view('admin.technicians.revenue', compact('technician', 'revenue'));
     }
+
+    public function skills()
+    {
+        $technicians = Technician::with(['user', 'skills.deviceType', 'primarySkills.deviceType'])
+            ->get();
+
+        return view('admin.technicians.skills', compact('technicians'));
+    }
 }
