@@ -175,12 +175,32 @@ class JobController extends Controller
 
         // Add ETA if job is en_route
         if ($job->status === 'en_route' && $job->technician) {
-            $etaService = app(\App\Services\Location\EtaCalculationService::class);
-            $eta = $etaService->calculateEta($job->technician, $job);
-            if ($eta) {
-                $response['eta'] = $eta;
+            // First check if manual ETA is set
+            if ($job->estimated_duration_minutes && $job->estimated_duration_minutes > 0) {
+                // Manual ETA is set, use it
+                $arrivalTime = now()->addMinutes($job->estimated_duration_minutes);
+                $windowMinutes = max(5, round($job->estimated_duration_minutes * 0.1));
+                $arrivalWindowStart = $arrivalTime->copy()->subMinutes($windowMinutes);
+                $arrivalWindowEnd = $arrivalTime->copy()->addMinutes($windowMinutes);
+
+                $response['eta'] = [
+                    'eta_minutes' => $job->estimated_duration_minutes,
+                    'eta_text' => $job->estimated_duration_minutes . ' mins',
+                    'arrival_time' => $arrivalTime->toIso8601String(),
+                    'arrival_window_start' => $arrivalWindowStart->toIso8601String(),
+                    'arrival_window_end' => $arrivalWindowEnd->toIso8601String(),
+                    'arrival_window_text' => $arrivalWindowStart->format('g:i A') . ' - ' . $arrivalWindowEnd->format('g:i A'),
+                    'is_manual' => true,
+                ];
             } else {
-                $response['eta'] = null;
+                // No manual ETA, calculate automatic ETA
+                $etaService = app(\App\Services\Location\EtaCalculationService::class);
+                $eta = $etaService->calculateEta($job->technician, $job);
+                if ($eta) {
+                    $response['eta'] = array_merge($eta, ['is_manual' => false]);
+                } else {
+                    $response['eta'] = null;
+                }
             }
             
             // Add technician and customer locations for map
@@ -625,6 +645,7 @@ class JobController extends Controller
 
         return response()->json([
             'message' => 'ETA updated successfully',
+            'job' => $job->fresh(), // Return updated job data
             'eta' => $eta,
         ]);
     }
