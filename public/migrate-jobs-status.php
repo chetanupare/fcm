@@ -2,25 +2,61 @@
 
 // Migration script to update jobs status enum to include component_pickup
 // Run this script via web browser: https://yourdomain.com/migrate-jobs-status.php
-// This script connects directly to MySQL without Laravel dependencies
+// This script connects directly to MySQL and automatically reads config from .env file
 
 echo "<h1>Jobs Status Enum Migration</h1>";
 echo "<pre>";
 
-// Database configuration - Update these values for your setup
-$host = 'localhost'; // Usually localhost for shared hosting
-$database = 'u882721353_fcm'; // Your database name
-$username = 'u882721353_fcm'; // Your database username
-$password = 'YourPasswordHere'; // Your database password
+// Function to parse .env file
+function parseEnvFile($filePath) {
+    $env = [];
+    if (!file_exists($filePath)) {
+        return $env;
+    }
 
-// IMPORTANT: Update the password above with your actual database password
-// You can find these details in your hosting control panel or .env file
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Skip comments
+        if (strpos($line, '#') === 0) {
+            continue;
+        }
+
+        // Parse key=value pairs
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+
+            // Remove quotes if present
+            $value = trim($value, '\'"');
+
+            $env[$key] = $value;
+        }
+    }
+    return $env;
+}
+
+// Read database configuration from .env file
+$envPath = __DIR__ . '/../.env';
+$env = parseEnvFile($envPath);
+
+$host = $env['DB_HOST'] ?? 'localhost';
+$port = $env['DB_PORT'] ?? '3306';
+$database = $env['DB_DATABASE'] ?? 'laravel';
+$username = $env['DB_USERNAME'] ?? 'root';
+$password = $env['DB_PASSWORD'] ?? '';
+
+echo "Reading database configuration from .env file...\n";
+echo "Host: $host:$port\n";
+echo "Database: $database\n";
+echo "Username: $username\n";
+echo "Password: " . (empty($password) ? '(empty)' : '****') . "\n\n";
 
 try {
     echo "Connecting to database...\n";
 
     // Create PDO connection
-    $pdo = new PDO("mysql:host=$host;dbname=$database;charset=utf8", $username, $password);
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$database;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     echo "✅ Database connection successful!\n\n";
@@ -80,9 +116,15 @@ try {
 } catch (PDOException $e) {
     echo "❌ Database error: " . $e->getMessage() . "\n\n";
     echo "Troubleshooting:\n";
-    echo "1. Check your database credentials above\n";
+    echo "1. Check your .env file exists and has correct DB_* values\n";
     echo "2. Make sure the database user has ALTER TABLE permissions\n";
-    echo "3. Verify the table name 'service_jobs' exists\n\n";
+    echo "3. Verify the table name 'service_jobs' exists\n";
+    echo "4. Check if your hosting blocks external database connections\n\n";
+    echo "Current .env values:\n";
+    echo "DB_HOST: $host\n";
+    echo "DB_PORT: $port\n";
+    echo "DB_DATABASE: $database\n";
+    echo "DB_USERNAME: $username\n\n";
 } catch (Exception $e) {
     echo "❌ Migration failed: " . $e->getMessage() . "\n";
     echo "Stack trace:\n" . $e->getTraceAsString() . "\n";
