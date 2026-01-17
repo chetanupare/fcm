@@ -22,7 +22,7 @@ try {
         echo "Current status enum: " . $result[0]->Type . "\n";
     }
 
-    // Update the enum to include component_pickup
+    // Update the enum to include all valid status values
     DB::statement("ALTER TABLE service_jobs MODIFY COLUMN status ENUM(
         'offered',
         'accepted',
