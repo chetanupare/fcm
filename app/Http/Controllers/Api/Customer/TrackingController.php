@@ -86,18 +86,38 @@ class TrackingController extends Controller
             $eta = $etaService->getCustomerEta($job);
         }
 
+        // Get technician location for map
+        $technicianLocation = null;
+        if ($job && $job->technician && in_array($job->status, ['en_route', 'component_pickup', 'arrived'])) {
+            // Get latest location from technician location history
+            $latestLocation = $job->technician->locationHistory()
+                ->latest('created_at')
+                ->first();
+
+            if ($latestLocation) {
+                $technicianLocation = [
+                    'lat' => $latestLocation->latitude,
+                    'lng' => $latestLocation->longitude,
+                    'updated_at' => $latestLocation->created_at,
+                ];
+            }
+        }
+
         return response()->json([
             'id' => $ticket->id,
             'status' => $ticket->status,
             'device' => $ticket->device->brand . ' ' . $ticket->device->device_type,
             'issue' => $ticket->issue_description,
             'address' => $ticket->address,
+            'customer_location' => $ticket->latitude && $ticket->longitude ? [
+                'lat' => $ticket->latitude,
+                'lng' => $ticket->longitude,
+            ] : null,
             'technician' => $job && $job->technician ? [
                 'id' => $job->technician->id,
                 'name' => $job->technician->user->name,
                 'phone' => $job->technician->user->phone,
-                'latitude' => $job->technician->latitude,
-                'longitude' => $job->technician->longitude,
+                'location' => $technicianLocation,
             ] : null,
             'job' => $job ? [
                 'id' => $job->id,

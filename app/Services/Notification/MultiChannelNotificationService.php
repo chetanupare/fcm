@@ -5,6 +5,8 @@ namespace App\Services\Notification;
 use App\Models\User;
 use App\Models\Notification;
 use App\Services\Notification\SmsService;
+use App\Services\Notification\SmsTemplateService;
+use App\Services\Notification\PushTemplateService;
 use App\Services\Notification\PushNotificationService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -13,15 +15,21 @@ use Illuminate\Support\Facades\View;
 class MultiChannelNotificationService
 {
     protected SmsService $smsService;
+    protected SmsTemplateService $smsTemplateService;
+    protected PushTemplateService $pushTemplateService;
     protected PushNotificationService $pushService;
     protected NotificationService $notificationService;
 
     public function __construct(
         SmsService $smsService,
+        SmsTemplateService $smsTemplateService,
+        PushTemplateService $pushTemplateService,
         PushNotificationService $pushService,
         NotificationService $notificationService
     ) {
         $this->smsService = $smsService;
+        $this->smsTemplateService = $smsTemplateService;
+        $this->pushTemplateService = $pushTemplateService;
         $this->pushService = $pushService;
         $this->notificationService = $notificationService;
     }
@@ -77,7 +85,7 @@ class MultiChannelNotificationService
 
         // Send via SMS
         if ($preferences['sms'] ?? true) {
-            $this->sendSms($user, $message, $data);
+            $this->sendSms($user, $type, $data);
         }
 
         // Send via Email
@@ -96,17 +104,25 @@ class MultiChannelNotificationService
     /**
      * Send SMS notification
      */
-    protected function sendSms(User $user, string $message, array $data): void
+    protected function sendSms(User $user, string $type, array $data): void
     {
         if (!$user->phone) {
             return;
         }
 
         try {
+            // Use template for known types, fallback to custom message
+            if (isset($data['custom_sms_message'])) {
+                $message = $data['custom_sms_message'];
+            } else {
+                $message = $this->smsTemplateService->getTemplate($type, $data);
+            }
+
             $this->smsService->send($user->phone, $message);
         } catch (\Exception $e) {
             Log::error('Failed to send SMS notification', [
                 'user_id' => $user->id,
+                'type' => $type,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -148,11 +164,32 @@ class MultiChannelNotificationService
     protected function sendPush(User $user, string $type, string $title, string $message, array $data): void
     {
         try {
-            $notification = new \App\Notifications\GenericNotification($title, $message, $data);
-            $this->pushService->sendToCustomer($user, $notification);
+            // Use template for structured notifications
+            if (isset($data['custom_push_title']) && isset($data['custom_push_message'])) {
+                $pushData = [
+                    'title' => $data['custom_push_title'],
+                    'message' => $data['custom_push_message'],
+                    'data' => $data
+                ];
+            } else {
+                $pushData = $this->pushTemplateService->getTemplate($type, $data);
+            }
+
+            $notification = new \App\Notifications\GenericNotification(
+                $pushData['title'],
+                $pushData['message'],
+                $pushData['data']
+            );
+
+            if ($user->role === 'customer') {
+                $this->pushService->sendToCustomer($user, $notification);
+            } elseif ($user->role === 'technician') {
+                $this->pushService->sendToTechnician($user, $notification);
+            }
         } catch (\Exception $e) {
             Log::error('Failed to send push notification', [
                 'user_id' => $user->id,
+                'type' => $type,
                 'error' => $e->getMessage(),
             ]);
         }

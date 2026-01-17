@@ -85,10 +85,13 @@ class SettingsController extends Controller
         ];
 
         $notifications = [
+            'sms_provider' => Setting::get('sms_provider', 'twilio'),
+            'sms_api_key' => Setting::get('sms_api_key'),
+            'sms_api_secret' => Setting::get('sms_api_secret'),
+            'sms_from_number' => Setting::get('sms_from_number'),
             'customer_push_enabled' => Setting::get('customer_push_enabled', true),
             'technician_push_enabled' => Setting::get('technician_push_enabled', true),
-            'push_notification_key' => Setting::get('push_notification_key'),
-            'push_notification_secret' => Setting::get('push_notification_secret'),
+            'fcm_server_key' => Setting::get('fcm_server_key'),
         ];
 
         return view('admin.settings.index', compact('whiteLabel', 'workflow', 'paymentGateways', 'localization', 'system', 'notifications'));
@@ -303,18 +306,21 @@ class SettingsController extends Controller
     public function updateNotifications(Request $request)
     {
         $request->validate([
+            'sms_provider' => 'sometimes|in:twilio,messagebird',
+            'sms_api_key' => 'nullable|string',
+            'sms_api_secret' => 'nullable|string',
+            'sms_from_number' => 'nullable|string|max:20',
             'customer_push_enabled' => 'sometimes|boolean',
             'technician_push_enabled' => 'sometimes|boolean',
-            'push_notification_key' => 'nullable|string',
-            'push_notification_secret' => 'nullable|string',
+            'fcm_server_key' => 'nullable|string',
         ]);
 
         foreach ($request->only([
-            'customer_push_enabled', 'technician_push_enabled',
-            'push_notification_key', 'push_notification_secret'
+            'sms_provider', 'sms_api_key', 'sms_api_secret', 'sms_from_number',
+            'customer_push_enabled', 'technician_push_enabled', 'fcm_server_key'
         ]) as $key => $value) {
             if ($value !== null) {
-                Setting::set($key, $value, 'notifications');
+                Setting::set($key, $value, 'notification');
             }
         }
 

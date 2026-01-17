@@ -16,9 +16,9 @@ class SmsService
     public function __construct()
     {
         $this->provider = Setting::get('sms_provider', 'twilio'); // twilio, messagebird, etc.
-        $this->apiKey = Setting::get('sms_api_key');
-        $this->apiSecret = Setting::get('sms_api_secret');
-        $this->fromNumber = Setting::get('sms_from_number');
+        $this->apiKey = config('services.twilio.sid') ?: Setting::get('sms_api_key');
+        $this->apiSecret = config('services.twilio.token') ?: Setting::get('sms_api_secret');
+        $this->fromNumber = config('services.twilio.from') ?: Setting::get('sms_from_number');
     }
 
     /**

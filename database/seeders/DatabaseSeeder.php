@@ -105,6 +105,17 @@ class DatabaseSeeder extends Seeder
         Setting::set('supported_currencies', ['USD', 'EUR', 'INR'], 'localization');
         Setting::set('supported_languages', ['en', 'ar', 'he'], 'localization');
 
+        // SMS Settings
+        Setting::set('sms_provider', 'twilio', 'notification');
+        Setting::set('sms_api_key', env('TWILIO_SID', ''), 'notification');
+        Setting::set('sms_api_secret', env('TWILIO_TOKEN', ''), 'notification');
+        Setting::set('sms_from_number', env('TWILIO_FROM_NUMBER', ''), 'notification');
+
+        // Push Notification Settings
+        Setting::set('fcm_server_key', env('FCM_SERVER_KEY', ''), 'notification');
+        Setting::set('customer_push_enabled', true, 'notification');
+        Setting::set('technician_push_enabled', true, 'notification');
+
         // Call additional seeders
         $this->call([
             ComponentCategorySeeder::class,

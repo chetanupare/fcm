@@ -782,11 +782,48 @@
     <div x-show="activeTab === 'notifications'" class="space-y-6" style="display: none;">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
             <div class="mb-6">
-                <h3 class="text-xl font-bold text-slate-800 mb-2">Push Notification Settings</h3>
-                <p class="text-sm text-slate-500">Configure push notifications for Customer and Technician applications</p>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">Notification Settings</h3>
+                <p class="text-sm text-slate-500">Configure SMS, Email, and Push notifications</p>
             </div>
             <form method="POST" action="{{ route('admin.settings.notifications') }}" class="space-y-6">
                 @csrf
+
+                <!-- SMS Settings -->
+                <div class="pt-6 border-t border-slate-200">
+                    <h4 class="text-lg font-bold text-slate-800 mb-4">SMS Configuration</h4>
+                    <div class="grid grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <label for="sms_provider" class="block text-sm font-semibold text-slate-700 mb-2">SMS Provider</label>
+                            <select name="sms_provider" id="sms_provider"
+                                    class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                <option value="twilio" {{ ($notifications['sms_provider'] ?? 'twilio') === 'twilio' ? 'selected' : '' }}>Twilio</option>
+                                <option value="messagebird" {{ ($notifications['sms_provider'] ?? '') === 'messagebird' ? 'selected' : '' }}>MessageBird</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sms_from_number" class="block text-sm font-semibold text-slate-700 mb-2">From Number</label>
+                            <input type="text" name="sms_from_number" id="sms_from_number"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                   value="{{ $notifications['sms_from_number'] ?? '' }}" placeholder="+1234567890">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label for="sms_api_key" class="block text-sm font-semibold text-slate-700 mb-2">API Key / SID</label>
+                            <input type="text" name="sms_api_key" id="sms_api_key"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                                   value="{{ $notifications['sms_api_key'] ?? '' }}">
+                        </div>
+                        <div>
+                            <label for="sms_api_secret" class="block text-sm font-semibold text-slate-700 mb-2">API Secret / Token</label>
+                            <input type="password" name="sms_api_secret" id="sms_api_secret"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                                   value="{{ $notifications['sms_api_secret'] ?? '' }}">
+                        </div>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500">Configure your SMS provider credentials. For Twilio, use Account SID as API Key and Auth Token as API Secret.</p>
+                </div>
+
                 <div class="space-y-4">
                     <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                         <div>
@@ -814,21 +851,16 @@
 
                 <div class="pt-6 border-t border-slate-200">
                     <h4 class="text-lg font-bold text-slate-800 mb-4">Push Notification Credentials</h4>
-                    <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-4">
                         <div>
-                            <label for="push_notification_key" class="block text-sm font-semibold text-slate-700 mb-2">Push Notification Key</label>
-                            <input type="text" name="push_notification_key" id="push_notification_key"
-                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" 
-                                   value="{{ $notifications['push_notification_key'] ?? '' }}" placeholder="FCM Server Key or APNS Key">
-                        </div>
-                        <div>
-                            <label for="push_notification_secret" class="block text-sm font-semibold text-slate-700 mb-2">Push Notification Secret</label>
-                            <input type="password" name="push_notification_secret" id="push_notification_secret"
-                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" 
-                                   value="{{ $notifications['push_notification_secret'] ?? '' }}" placeholder="FCM Secret or APNS Secret">
+                            <label for="fcm_server_key" class="block text-sm font-semibold text-slate-700 mb-2">FCM Server Key</label>
+                            <input type="password" name="fcm_server_key" id="fcm_server_key"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                                   value="{{ $notifications['fcm_server_key'] ?? '' }}"
+                                   placeholder="AAAA... Firebase Cloud Messaging Server Key">
+                            <p class="mt-1 text-xs text-slate-500">Get this from Firebase Console → Project Settings → Cloud Messaging → Server Key</p>
                         </div>
                     </div>
-                    <p class="mt-2 text-xs text-slate-500">Configure Firebase Cloud Messaging (FCM) or Apple Push Notification Service (APNS) credentials</p>
                 </div>
 
                 <div class="flex justify-end pt-6 border-t border-slate-100">

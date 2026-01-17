@@ -328,6 +328,12 @@ class JobController extends Controller
             $this->handleCannotRepair($job);
         }
 
+        // Send ETA-specific notifications
+        if ($request->status === 'arrived') {
+            $etaNotificationService = app(\App\Services\Notification\EtaNotificationService::class);
+            $etaNotificationService->sendTechnicianArrived($job);
+        }
+
         // Send notification to customer about status change with ETA
         $customer = $job->ticket->customer;
         if ($customer && in_array($request->status, ['en_route', 'arrived', 'diagnosing', 'repairing', 'quality_check', 'completed'])) {
